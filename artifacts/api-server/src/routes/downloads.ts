@@ -27,10 +27,61 @@ function formatRow(row: typeof downloadsTable.$inferSelect) {
   };
 }
 
+function runCommand(args: string[]): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const proc = spawn(YT_DLP, args);
+    let stdout = "";
+    let stderr = "";
+    proc.stdout.on("data", (chunk: Buffer) => { stdout += chunk.toString(); });
+    proc.stderr.on("data", (chunk: Buffer) => { stderr += chunk.toString(); });
+    proc.on("close", (code) => {
+      if (code === 0) resolve(stdout);
+      else reject(new Error(stderr.slice(-500) || `yt-dlp exited with code ${code}`));
+    });
+    proc.on("error", reject);
+  });
+}
+
+interface YtMeta {
+  title: string;
+  uploader: string;
+  duration: number;
+  thumbnail: string;
+}
+
+async function fetchMeta(youtubeUrl: string): Promise<YtMeta> {
+  const json = await runCommand([
+    "--dump-json",
+    "--no-playlist",
+    "--no-warnings",
+    youtubeUrl,
+  ]);
+  const data = JSON.parse(json.split("\n")[0]);
+  return {
+    title: data.title ?? "Unknown Title",
+    uploader: data.uploader ?? data.channel ?? "Unknown Artist",
+    duration: data.duration ?? 0,
+    thumbnail: data.thumbnail ?? "",
+  };
+}
+
 async function runDownload(downloadId: number, youtubeUrl: string, folderId: number | null | undefined) {
   try {
     await db.update(downloadsTable).set({ status: "downloading", progress: 0 }).where(eq(downloadsTable.id, downloadId));
 
+    // Step 1: fetch metadata
+    const meta = await fetchMeta(youtubeUrl).catch(() => ({
+      title: "Unknown Title",
+      uploader: "Unknown Artist",
+      duration: 0,
+      thumbnail: "",
+    }));
+
+    await db.update(downloadsTable)
+      .set({ title: meta.title })
+      .where(eq(downloadsTable.id, downloadId));
+
+    // Step 2: download audio
     const outputTemplate = path.join(musicDir, "%(title)s.%(ext)s");
 
     await new Promise<void>((resolve, reject) => {
@@ -39,28 +90,19 @@ async function runDownload(downloadId: number, youtubeUrl: string, folderId: num
         "--audio-format", "mp3",
         "--audio-quality", "0",
         "--output", outputTemplate,
-        "--print", "%(title)s|%(uploader)s|%(duration)s|%(thumbnail)s",
         "--no-playlist",
+        "--no-warnings",
         youtubeUrl,
       ]);
 
-      let infoLine = "";
       let stderrBuf = "";
-
-      proc.stdout.on("data", (chunk: Buffer) => {
-        const text = chunk.toString();
-        if (text.includes("|")) {
-          infoLine = text.trim();
-        }
-      });
 
       proc.stderr.on("data", (chunk: Buffer) => {
         const text = chunk.toString();
         stderrBuf += text;
-
-        const progressMatch = text.match(/(\d+\.?\d*)%/);
-        if (progressMatch) {
-          const progress = parseFloat(progressMatch[1]);
+        const m = text.match(/(\d+\.?\d*)%/);
+        if (m) {
+          const progress = parseFloat(m[1]);
           db.update(downloadsTable)
             .set({ progress })
             .where(eq(downloadsTable.id, downloadId))
@@ -69,30 +111,14 @@ async function runDownload(downloadId: number, youtubeUrl: string, folderId: num
       });
 
       proc.on("close", (code) => {
-        if (code === 0) {
-          resolve();
-        } else {
-          reject(new Error(stderrBuf.slice(-500) || "yt-dlp failed"));
-        }
+        if (code === 0) resolve();
+        else reject(new Error(stderrBuf.slice(-500) || `yt-dlp exited with code ${code}`));
       });
-
       proc.on("error", reject);
     });
 
-    let title = "Unknown Title";
-    let artist = "Unknown Artist";
-    let duration = 0;
-    let thumbnailUrl: string | null = null;
-
-    if (infoLine) {
-      const parts = infoLine.split("|");
-      title = parts[0]?.trim() || title;
-      artist = parts[1]?.trim() || artist;
-      duration = parseInt(parts[2] || "0", 10) || 0;
-      thumbnailUrl = parts[3]?.trim() || null;
-    }
-
-    const expectedFile = path.join(musicDir, `${title}.mp3`);
+    // Step 3: find the downloaded file
+    const expectedFile = path.join(musicDir, `${meta.title}.mp3`);
     let filePath = expectedFile;
     let fileSize = 0;
 
@@ -106,20 +132,18 @@ async function runDownload(downloadId: number, youtubeUrl: string, folderId: num
       if (recent) {
         filePath = path.join(musicDir, recent.f);
         fileSize = fs.statSync(filePath).size;
-        const baseName = path.basename(recent.f, ".mp3");
-        if (title === "Unknown Title") title = baseName;
       }
     }
 
     const [track] = await db
       .insert(tracksTable)
       .values({
-        title,
-        artist,
-        duration,
+        title: meta.title,
+        artist: meta.uploader,
+        duration: meta.duration,
         fileSize,
         filePath,
-        thumbnailUrl,
+        thumbnailUrl: meta.thumbnail || null,
         youtubeUrl,
         folderId: folderId ?? null,
       })
@@ -127,10 +151,10 @@ async function runDownload(downloadId: number, youtubeUrl: string, folderId: num
 
     await db
       .update(downloadsTable)
-      .set({ status: "completed", progress: 100, trackId: track.id, title })
+      .set({ status: "completed", progress: 100, trackId: track.id })
       .where(eq(downloadsTable.id, downloadId));
 
-    logger.info({ downloadId, trackId: track.id, title }, "Download completed");
+    logger.info({ downloadId, trackId: track.id, title: meta.title }, "Download completed");
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
     logger.error({ downloadId, err }, "Download failed");
