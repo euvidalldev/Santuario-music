@@ -3,7 +3,7 @@ import { Track, useDeleteTrack, useUpdateTrack, useListFolders, getListTracksQue
 import { useQueryClient } from "@tanstack/react-query";
 import { formatDuration, formatFileSize, formatRelativeTime } from "@/lib/format";
 import { usePlayer, playTrack } from "@/hooks/use-player";
-import { MoreHorizontal, Play, Pause, Trash2, Folder as FolderIcon, Clock, HardDrive, Edit2 } from "lucide-react";
+import { MoreHorizontal, Play, Pause, Trash2, Folder as FolderIcon, Clock, HardDrive, Edit2, Download } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -179,6 +179,11 @@ export function TrackList({ tracks, isLoading }: TrackListProps) {
                     <DropdownMenuContent align="end" className="w-48">
                       <DropdownMenuItem onClick={() => openEdit(track)}>
                         <Edit2 className="w-4 h-4 mr-2" /> Edit Info
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <a href={`/api/tracks/${track.id}/download`} download>
+                          <Download className="w-4 h-4 mr-2" /> Download to Device
+                        </a>
                       </DropdownMenuItem>
                       <DropdownMenuSub>
                         <DropdownMenuSubTrigger>

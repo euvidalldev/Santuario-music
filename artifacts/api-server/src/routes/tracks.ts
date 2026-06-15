@@ -111,6 +111,28 @@ router.delete("/tracks/:id", async (req, res) => {
   res.status(204).send();
 });
 
+router.get("/tracks/:id/download", async (req, res) => {
+  const id = Number(req.params.id);
+  const [track] = await db.select().from(tracksTable).where(eq(tracksTable.id, id));
+  if (!track) {
+    res.status(404).json({ error: "Track not found" });
+    return;
+  }
+  const absPath = path.isAbsolute(track.filePath) ? track.filePath : path.resolve(musicDir, track.filePath);
+  if (!fs.existsSync(absPath)) {
+    res.status(404).json({ error: "Audio file not found" });
+    return;
+  }
+  const stat = fs.statSync(absPath);
+  const safeFilename = `${track.title} - ${track.artist}.mp3`.replace(/[^\w\s\-().]/g, "_");
+  res.writeHead(200, {
+    "Content-Length": stat.size,
+    "Content-Type": "audio/mpeg",
+    "Content-Disposition": `attachment; filename="${safeFilename}"`,
+  });
+  fs.createReadStream(absPath).pipe(res);
+});
+
 router.get("/tracks/:id/stream", async (req, res) => {
   const id = Number(req.params.id);
   const [track] = await db.select().from(tracksTable).where(eq(tracksTable.id, id));
