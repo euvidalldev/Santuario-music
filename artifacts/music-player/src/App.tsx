@@ -8,6 +8,12 @@ import Downloads from "@/pages/downloads";
 import Folder from "@/pages/folder";
 import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
+import { useCapacitorInit } from "@/hooks/use-capacitor";
+import { setBaseUrl } from "@workspace/api-client-react";
+import { getApiBaseUrl } from "@/lib/api-url";
+
+// Point API calls to the deployed backend when running as a native app
+setBaseUrl(getApiBaseUrl() || null);
 
 const queryClient = new QueryClient();
 
@@ -26,10 +32,13 @@ function Router() {
 }
 
 function App() {
+  // Creates the Sanctuary music folder and hides splash screen on native
+  useCapacitorInit();
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+        <WouterRouter base={import.meta.env.BASE_URL?.replace(/\/$/, "") ?? ""}>
           <Router />
         </WouterRouter>
         <Toaster />
