@@ -21,14 +21,12 @@ export function TrackList({ tracks, isLoading }: TrackListProps) {
   const deleteTrack = useDeleteTrack();
   const updateTrack = useUpdateTrack();
   const { data: folders } = useListFolders();
-  
+
   const [editingTrack, setEditingTrack] = useState<Track | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editArtist, setEditArtist] = useState("");
 
-  const handlePlay = (track: Track) => {
-    playTrack(track, tracks);
-  };
+  const handlePlay = (track: Track) => playTrack(track, tracks);
 
   const handleDelete = async (id: number) => {
     await deleteTrack.mutateAsync({ id });
@@ -49,25 +47,20 @@ export function TrackList({ tracks, isLoading }: TrackListProps) {
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingTrack) return;
-    
-    await updateTrack.mutateAsync({ 
-      id: editingTrack.id, 
-      data: { title: editTitle, artist: editArtist } 
-    });
-    
+    await updateTrack.mutateAsync({ id: editingTrack.id, data: { title: editTitle, artist: editArtist } });
     setEditingTrack(null);
     queryClient.invalidateQueries({ queryKey: getListTracksQueryKey() });
   };
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-2 p-6">
-        {Array.from({ length: 10 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-4 py-3 px-4 rounded-lg bg-card/40 animate-pulse border border-border/50">
-            <div className="w-12 h-12 bg-muted rounded-md" />
+      <div className="flex flex-col gap-2 p-4">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3 py-3 px-3 rounded-lg bg-card/40 animate-pulse border border-border/50">
+            <div className="w-10 h-10 bg-muted rounded-md flex-shrink-0" />
             <div className="flex-1 space-y-2">
-              <div className="h-4 bg-muted rounded w-1/3" />
-              <div className="h-3 bg-muted rounded w-1/4" />
+              <div className="h-4 bg-muted rounded w-1/2" />
+              <div className="h-3 bg-muted rounded w-1/3" />
             </div>
           </div>
         ))}
@@ -89,136 +82,121 @@ export function TrackList({ tracks, isLoading }: TrackListProps) {
     );
   }
 
+  const ActionsMenu = ({ track }: { track: Track }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="w-9 h-9 flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-all flex-shrink-0">
+          <MoreHorizontal className="w-4 h-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuItem onClick={() => openEdit(track)}>
+          <Edit2 className="w-4 h-4 mr-2" /> Edit Info
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <a href={`/api/tracks/${track.id}/download`} download>
+            <Download className="w-4 h-4 mr-2" /> Download to Device
+          </a>
+        </DropdownMenuItem>
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <FolderIcon className="w-4 h-4 mr-2" /> Move to Folder
+          </DropdownMenuSubTrigger>
+          <DropdownMenuPortal>
+            <DropdownMenuSubContent>
+              <DropdownMenuItem
+                onClick={() => handleMoveToFolder(track.id, null)}
+                className={!track.folderId ? "bg-secondary" : ""}
+              >
+                No Folder
+              </DropdownMenuItem>
+              {folders?.length ? <DropdownMenuSeparator /> : null}
+              {folders?.map((folder) => (
+                <DropdownMenuItem
+                  key={folder.id}
+                  onClick={() => handleMoveToFolder(track.id, folder.id)}
+                  className={track.folderId === folder.id ? "bg-secondary text-primary" : ""}
+                >
+                  {folder.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuPortal>
+        </DropdownMenuSub>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => handleDelete(track.id)}
+          className="text-destructive focus:text-destructive focus:bg-destructive/10"
+        >
+          <Trash2 className="w-4 h-4 mr-2" /> Delete Track
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <>
-      <div className="w-full">
-        {/* Header */}
-        <div className="grid grid-cols-[auto_1fr_minmax(120px,2fr)_minmax(100px,1fr)_minmax(80px,1fr)_auto] gap-4 px-8 py-3 border-b border-border/50 text-xs font-medium text-muted-foreground uppercase tracking-wider sticky top-0 bg-background/95 backdrop-blur z-20">
-          <div className="w-8">#</div>
+      {/* ── Desktop layout ── */}
+      <div className="hidden md:block w-full">
+        <div className="grid grid-cols-[2rem_1fr_minmax(120px,2fr)_minmax(100px,1fr)_minmax(80px,1fr)_2.5rem] gap-4 px-8 py-3 border-b border-border/50 text-xs font-medium text-muted-foreground uppercase tracking-wider sticky top-0 bg-background/95 backdrop-blur z-20">
+          <div>#</div>
           <div>Title</div>
-          <div className="hidden md:block">Artist</div>
-          <div className="hidden lg:flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Added</div>
-          <div className="hidden lg:flex items-center gap-1.5"><HardDrive className="w-3.5 h-3.5" /> Size</div>
-          <div className="w-10"></div>
+          <div>Artist</div>
+          <div className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Added</div>
+          <div className="flex items-center gap-1.5"><HardDrive className="w-3.5 h-3.5" /> Size</div>
+          <div />
         </div>
 
-        {/* Tracks */}
         <div className="flex flex-col pt-2 pb-6 px-4">
           {tracks.map((track, index) => {
-            const isCurrentlyPlaying = currentTrack?.id === track.id;
-            
+            const active = currentTrack?.id === track.id;
             return (
-              <div 
+              <div
                 key={track.id}
                 onDoubleClick={() => handlePlay(track)}
-                className={`group grid grid-cols-[auto_1fr_minmax(120px,2fr)_minmax(100px,1fr)_minmax(80px,1fr)_auto] gap-4 items-center px-4 py-3 rounded-lg hover:bg-card/80 transition-colors border border-transparent hover:border-border/50 cursor-pointer ${isCurrentlyPlaying ? 'bg-primary/5 border-primary/20' : ''}`}
+                className={`group grid grid-cols-[2rem_1fr_minmax(120px,2fr)_minmax(100px,1fr)_minmax(80px,1fr)_2.5rem] gap-4 items-center px-4 py-3 rounded-lg hover:bg-card/80 transition-colors border border-transparent hover:border-border/50 cursor-pointer ${active ? "bg-primary/5 border-primary/20" : ""}`}
               >
-                {/* Index / Play Button */}
-                <div className="w-8 flex justify-center text-muted-foreground text-sm font-mono relative">
-                  <span className={`group-hover:opacity-0 ${isCurrentlyPlaying ? 'opacity-0' : 'opacity-100'}`}>
-                    {(index + 1).toString().padStart(2, '0')}
+                <div className="flex justify-center text-muted-foreground text-sm font-mono relative">
+                  <span className={`group-hover:opacity-0 ${active ? "opacity-0" : "opacity-100"}`}>
+                    {(index + 1).toString().padStart(2, "0")}
                   </span>
-                  <button 
+                  <button
                     onClick={() => handlePlay(track)}
-                    className={`absolute inset-0 flex items-center justify-center ${isCurrentlyPlaying ? 'opacity-100 text-primary' : 'opacity-0 group-hover:opacity-100 hover:text-primary transition-opacity'}`}
+                    className={`absolute inset-0 flex items-center justify-center ${active ? "opacity-100 text-primary" : "opacity-0 group-hover:opacity-100 hover:text-primary transition-opacity"}`}
                   >
-                    {isCurrentlyPlaying && isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
+                    {active && isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
                   </button>
                 </div>
 
-                {/* Title & Thumbnail */}
-                <div className="flex items-center gap-4 min-w-0">
+                <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded overflow-hidden flex-shrink-0 relative bg-secondary border border-border/50">
-                    {track.thumbnailUrl && (
-                      <img src={track.thumbnailUrl} alt="" className="w-full h-full object-cover" />
-                    )}
-                    {isCurrentlyPlaying && isPlaying && (
+                    {track.thumbnailUrl && <img src={track.thumbnailUrl} alt="" className="w-full h-full object-cover" />}
+                    {active && isPlaying && (
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-0.5">
-                        <div className="w-1 h-3 bg-primary animate-[bounce_1s_infinite] rounded-full" style={{ animationDelay: '0s' }}></div>
-                        <div className="w-1 h-2 bg-primary animate-[bounce_1s_infinite] rounded-full" style={{ animationDelay: '0.2s' }}></div>
-                        <div className="w-1 h-4 bg-primary animate-[bounce_1s_infinite] rounded-full" style={{ animationDelay: '0.4s' }}></div>
+                        <div className="w-1 h-3 bg-primary animate-[bounce_1s_infinite] rounded-full" style={{ animationDelay: "0s" }} />
+                        <div className="w-1 h-2 bg-primary animate-[bounce_1s_infinite] rounded-full" style={{ animationDelay: "0.2s" }} />
+                        <div className="w-1 h-4 bg-primary animate-[bounce_1s_infinite] rounded-full" style={{ animationDelay: "0.4s" }} />
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className={`text-sm font-medium truncate ${isCurrentlyPlaying ? 'text-primary' : 'text-foreground'}`}>
-                      {track.title}
-                    </span>
-                    <span className="text-xs text-muted-foreground md:hidden truncate">{track.artist}</span>
-                  </div>
+                  <span className={`text-sm font-medium truncate ${active ? "text-primary" : "text-foreground"}`}>{track.title}</span>
                 </div>
 
-                {/* Artist */}
-                <div className="hidden md:flex min-w-0">
-                  <span className="text-sm text-muted-foreground truncate group-hover:text-foreground transition-colors">
-                    {track.artist}
-                  </span>
+                <div className="min-w-0">
+                  <span className="text-sm text-muted-foreground truncate block group-hover:text-foreground transition-colors">{track.artist}</span>
                 </div>
 
-                {/* Date */}
-                <div className="hidden lg:flex min-w-0">
-                  <span className="text-sm text-muted-foreground font-mono truncate">
-                    {formatRelativeTime(track.downloadedAt)}
-                  </span>
+                <div className="min-w-0">
+                  <span className="text-sm text-muted-foreground font-mono truncate block">{formatRelativeTime(track.downloadedAt)}</span>
                 </div>
 
-                {/* Duration/Size */}
-                <div className="hidden lg:flex flex-col min-w-0">
+                <div className="flex flex-col min-w-0">
                   <span className="text-sm text-foreground font-mono">{formatDuration(track.duration)}</span>
                   <span className="text-xs text-muted-foreground font-mono">{formatFileSize(track.fileSize)}</span>
                 </div>
 
-                {/* Actions */}
-                <div className="w-10 flex justify-end">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-all">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem onClick={() => openEdit(track)}>
-                        <Edit2 className="w-4 h-4 mr-2" /> Edit Info
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <a href={`/api/tracks/${track.id}/download`} download>
-                          <Download className="w-4 h-4 mr-2" /> Download to Device
-                        </a>
-                      </DropdownMenuItem>
-                      <DropdownMenuSub>
-                        <DropdownMenuSubTrigger>
-                          <FolderIcon className="w-4 h-4 mr-2" /> Move to Folder
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuPortal>
-                          <DropdownMenuSubContent>
-                            <DropdownMenuItem 
-                              onClick={() => handleMoveToFolder(track.id, null)}
-                              className={!track.folderId ? "bg-secondary" : ""}
-                            >
-                              No Folder
-                            </DropdownMenuItem>
-                            {folders?.length ? <DropdownMenuSeparator /> : null}
-                            {folders?.map(folder => (
-                              <DropdownMenuItem 
-                                key={folder.id} 
-                                onClick={() => handleMoveToFolder(track.id, folder.id)}
-                                className={track.folderId === folder.id ? "bg-secondary text-primary" : ""}
-                              >
-                                {folder.name}
-                              </DropdownMenuItem>
-                            ))}
-                          </DropdownMenuSubContent>
-                        </DropdownMenuPortal>
-                      </DropdownMenuSub>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        onClick={() => handleDelete(track.id)}
-                        className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" /> Delete Track
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-all">
+                  <ActionsMenu track={track} />
                 </div>
               </div>
             );
@@ -226,6 +204,45 @@ export function TrackList({ tracks, isLoading }: TrackListProps) {
         </div>
       </div>
 
+      {/* ── Mobile layout ── */}
+      <div className="md:hidden flex flex-col pb-4">
+        {tracks.map((track, index) => {
+          const active = currentTrack?.id === track.id;
+          return (
+            <div
+              key={track.id}
+              className={`flex items-center gap-3 px-4 py-3 border-b border-border/30 ${active ? "bg-primary/5" : ""}`}
+            >
+              {/* Thumbnail + play overlay */}
+              <button
+                onClick={() => handlePlay(track)}
+                className="relative w-12 h-12 rounded overflow-hidden flex-shrink-0 bg-secondary border border-border/50"
+              >
+                {track.thumbnailUrl && <img src={track.thumbnailUrl} alt="" className="w-full h-full object-cover" />}
+                <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${active ? "opacity-100" : "opacity-0"}`}>
+                  {active && isPlaying
+                    ? <Pause className="w-4 h-4 fill-white text-white" />
+                    : <Play className="w-4 h-4 fill-white text-white ml-0.5" />}
+                </div>
+              </button>
+
+              {/* Title + artist + meta */}
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm font-medium truncate ${active ? "text-primary" : "text-foreground"}`}>{track.title}</p>
+                <p className="text-xs text-muted-foreground truncate">{track.artist}</p>
+                <p className="text-[10px] text-muted-foreground font-mono mt-0.5">
+                  {formatDuration(track.duration)} · {formatFileSize(track.fileSize)}
+                </p>
+              </div>
+
+              {/* Actions */}
+              <ActionsMenu track={track} />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Edit dialog */}
       <Dialog open={!!editingTrack} onOpenChange={(open) => !open && setEditingTrack(null)}>
         <DialogContent>
           <DialogHeader>
@@ -234,29 +251,15 @@ export function TrackList({ tracks, isLoading }: TrackListProps) {
           <form onSubmit={handleSaveEdit} className="space-y-4 pt-4">
             <div className="space-y-2">
               <Label htmlFor="title">Title</Label>
-              <Input 
-                id="title" 
-                value={editTitle} 
-                onChange={(e) => setEditTitle(e.target.value)} 
-                required 
-              />
+              <Input id="title" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="artist">Artist</Label>
-              <Input 
-                id="artist" 
-                value={editArtist} 
-                onChange={(e) => setEditArtist(e.target.value)} 
-                required 
-              />
+              <Input id="artist" value={editArtist} onChange={(e) => setEditArtist(e.target.value)} required />
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditingTrack(null)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={updateTrack.isPending}>
-                Save Changes
-              </Button>
+              <Button type="button" variant="outline" onClick={() => setEditingTrack(null)}>Cancel</Button>
+              <Button type="submit" disabled={updateTrack.isPending}>Save Changes</Button>
             </DialogFooter>
           </form>
         </DialogContent>

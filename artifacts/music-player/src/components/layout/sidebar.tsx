@@ -58,7 +58,7 @@ export function Sidebar() {
   );
 
   return (
-    <div className="w-64 bg-sidebar border-r border-sidebar-border h-screen flex flex-col pt-6 flex-shrink-0">
+    <div className="hidden md:flex w-64 bg-sidebar border-r border-sidebar-border h-screen flex-col pt-6 flex-shrink-0">
       <div className="px-6 mb-8 flex items-center gap-3">
         <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-[0_0_15px_rgba(200,80,0,0.3)]">
           <Library className="w-4 h-4 text-primary-foreground" />
