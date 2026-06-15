@@ -1,22 +1,26 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Music Player API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: tracks
+    description: Track management
+  - name: folders
+    description: Folder management
+  - name: downloads
+    description: Download management
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +28,250 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /folders:
+    get:
+      operationId: listFolders
+      tags: [folders]
+      summary: List all folders
+      responses:
+        "200":
+          description: List of folders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Folder"
+    post:
+      operationId: createFolder
+      tags: [folders]
+      summary: Create a folder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FolderInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Folder"
+
+  /folders/{id}:
+    delete:
+      operationId: deleteFolder
+      tags: [folders]
+      summary: Delete a folder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+    patch:
+      operationId: renameFolder
+      tags: [folders]
+      summary: Rename a folder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FolderInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Folder"
+
+  /tracks:
+    get:
+      operationId: listTracks
+      tags: [tracks]
+      summary: List all tracks
+      parameters:
+        - name: folderId
+          in: query
+          schema:
+            type: ["integer", "null"]
+          description: Filter by folder (null for unorganized)
+      responses:
+        "200":
+          description: List of tracks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Track"
+
+  /tracks/{id}:
+    get:
+      operationId: getTrack
+      tags: [tracks]
+      summary: Get a track
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Track
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Track"
+    delete:
+      operationId: deleteTrack
+      tags: [tracks]
+      summary: Delete a track
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+    patch:
+      operationId: updateTrack
+      tags: [tracks]
+      summary: Update track metadata or move to folder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrackUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Track"
+
+  /tracks/{id}/stream:
+    get:
+      operationId: streamTrack
+      tags: [tracks]
+      summary: Stream audio file
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Audio stream
+          content:
+            audio/mpeg:
+              schema:
+                type: string
+                format: binary
+
+  /downloads:
+    get:
+      operationId: listDownloads
+      tags: [downloads]
+      summary: List all downloads (including in-progress)
+      responses:
+        "200":
+          description: List of downloads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Download"
+    post:
+      operationId: startDownload
+      tags: [downloads]
+      summary: Start a YouTube download
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DownloadInput"
+      responses:
+        "202":
+          description: Download started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Download"
+
+  /downloads/{id}:
+    get:
+      operationId: getDownload
+      tags: [downloads]
+      summary: Get download status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Download status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Download"
+    delete:
+      operationId: cancelDownload
+      tags: [downloads]
+      summary: Cancel or remove a download
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Cancelled
+
+  /stats:
+    get:
+      operationId: getStats
+      tags: [tracks]
+      summary: Get library stats
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +282,111 @@ components:
       required:
         - status
 
+    Folder:
+      type: object
+      required: [id, name, trackCount, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        trackCount:
+          type: integer
+        createdAt:
+          type: string
+
+    FolderInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+
+    Track:
+      type: object
+      required: [id, title, artist, duration, fileSize, filePath, downloadedAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        artist:
+          type: string
+        duration:
+          type: integer
+          description: Duration in seconds
+        fileSize:
+          type: integer
+          description: File size in bytes
+        filePath:
+          type: string
+        thumbnailUrl:
+          type: ["string", "null"]
+        youtubeUrl:
+          type: ["string", "null"]
+        folderId:
+          type: ["integer", "null"]
+        folderName:
+          type: ["string", "null"]
+        downloadedAt:
+          type: string
+
+    TrackUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        artist:
+          type: string
+        folderId:
+          type: ["integer", "null"]
+
+    Download:
+      type: object
+      required: [id, youtubeUrl, status, createdAt]
+      properties:
+        id:
+          type: integer
+        youtubeUrl:
+          type: string
+        title:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [pending, downloading, completed, failed]
+        progress:
+          type: ["number", "null"]
+          description: Progress 0-100
+        error:
+          type: ["string", "null"]
+        trackId:
+          type: ["integer", "null"]
+        folderId:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+
+    DownloadInput:
+      type: object
+      required: [youtubeUrl]
+      properties:
+        youtubeUrl:
+          type: string
+        folderId:
+          type: ["integer", "null"]
+
+    LibraryStats:
+      type: object
+      required: [totalTracks, totalFolders, totalSize, recentDownloads]
+      properties:
+        totalTracks:
+          type: integer
+        totalFolders:
+          type: integer
+        totalSize:
+          type: integer
+          description: Total file size in bytes
+        recentDownloads:
+          type: integer
+          description: Downloads in last 7 days
