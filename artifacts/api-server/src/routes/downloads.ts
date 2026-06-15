@@ -81,14 +81,14 @@ async function runDownload(downloadId: number, youtubeUrl: string, folderId: num
       .set({ title: meta.title })
       .where(eq(downloadsTable.id, downloadId));
 
-    // Step 2: download audio
+    // Step 2: download audio as AAC/M4A (smaller than MP3, native YouTube format)
     const outputTemplate = path.join(musicDir, "%(title)s.%(ext)s");
 
     await new Promise<void>((resolve, reject) => {
       const proc = spawn(YT_DLP, [
         "--extract-audio",
-        "--audio-format", "mp3",
-        "--audio-quality", "0",
+        "--audio-format", "m4a",
+        "--audio-quality", "128K",
         "--output", outputTemplate,
         "--no-playlist",
         "--no-warnings",
@@ -118,14 +118,14 @@ async function runDownload(downloadId: number, youtubeUrl: string, folderId: num
     });
 
     // Step 3: find the downloaded file
-    const expectedFile = path.join(musicDir, `${meta.title}.mp3`);
+    const expectedFile = path.join(musicDir, `${meta.title}.m4a`);
     let filePath = expectedFile;
     let fileSize = 0;
 
     if (fs.existsSync(expectedFile)) {
       fileSize = fs.statSync(expectedFile).size;
     } else {
-      const files = fs.readdirSync(musicDir).filter((f) => f.endsWith(".mp3"));
+      const files = fs.readdirSync(musicDir).filter((f) => f.endsWith(".m4a") || f.endsWith(".mp3"));
       const recent = files
         .map((f) => ({ f, mtime: fs.statSync(path.join(musicDir, f)).mtimeMs }))
         .sort((a, b) => b.mtime - a.mtime)[0];
