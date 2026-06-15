@@ -19,7 +19,7 @@ export default function Folder() {
   const folder = folders.find(f => f.id === folderId);
 
   const { data: tracks = [], isLoading } = useListTracks(
-    { folderId }, 
+    { folderId },
     { query: { queryKey: getListTracksQueryKey({ folderId }), enabled: !!folderId } }
   );
 
@@ -30,9 +30,7 @@ export default function Folder() {
   const [renameValue, setRenameValue] = useState("");
 
   const handlePlayAll = () => {
-    if (tracks.length > 0) {
-      playTrack(tracks[0], tracks);
-    }
+    if (tracks.length > 0) playTrack(tracks[0], tracks);
   };
 
   const handleDelete = async () => {
@@ -46,7 +44,6 @@ export default function Folder() {
   const handleRename = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!folderId || !renameValue.trim()) return;
-    
     await renameFolder.mutateAsync({ id: folderId, data: { name: renameValue } });
     setIsRenameOpen(false);
   };
@@ -57,24 +54,26 @@ export default function Folder() {
 
   return (
     <div className="flex flex-col min-h-full">
-      {/* Hero Section */}
-      <div className="px-8 py-10 pt-16 flex flex-col gap-6 relative border-b border-border/30 bg-card/10">
-        <div className="absolute top-0 left-10 p-8 opacity-[0.03]">
-          <FolderIcon className="w-64 h-64" />
+      {/* Header */}
+      <div className="px-4 md:px-8 pt-8 pb-4 md:pt-14 md:pb-6 flex flex-col gap-3 relative border-b border-border/30 bg-card/10">
+        <div className="absolute top-0 left-6 opacity-[0.03] pointer-events-none">
+          <FolderIcon className="w-48 h-48" />
         </div>
-        
+
         <div className="flex items-start justify-between relative z-10">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-3 text-primary font-medium text-sm mb-2">
-              <FolderIcon className="w-4 h-4" />
+          <div className="flex flex-col gap-1 min-w-0 pr-3">
+            <div className="flex items-center gap-2 text-primary font-medium text-xs mb-1">
+              <FolderIcon className="w-3 h-3" />
               <span>Playlist</span>
             </div>
-            <h1 className="text-5xl font-bold tracking-tight text-foreground">{folder?.name}</h1>
+            <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-foreground truncate">
+              {folder?.name}
+            </h1>
           </div>
-          
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="h-10 w-10 bg-transparent">
+              <Button variant="outline" size="icon" className="h-9 w-9 bg-transparent flex-shrink-0">
                 <Edit2 className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -91,26 +90,22 @@ export default function Folder() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        
-        <div className="flex items-center gap-6 relative z-10 mt-4">
-          <Button 
-            size="lg" 
-            className="rounded-full px-8 shadow-[0_0_20px_rgba(200,80,0,0.3)] hover:shadow-[0_0_30px_rgba(200,80,0,0.5)] transition-all font-semibold"
+
+        <div className="flex flex-wrap items-center gap-3 relative z-10">
+          <Button
+            size="default"
+            className="rounded-full px-6 shadow-[0_0_20px_rgba(200,80,0,0.3)] font-semibold"
             onClick={handlePlayAll}
             disabled={tracks.length === 0}
           >
-            <Play className="w-5 h-5 mr-2 fill-current" />
+            <Play className="w-4 h-4 mr-2 fill-current" />
             Play Folder
           </Button>
-          
-          <div className="flex items-center gap-4 text-sm text-muted-foreground font-mono">
-            <span>{tracks.length} tracks</span>
-          </div>
+          <span className="text-xs text-muted-foreground font-mono">{tracks.length} tracks</span>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 pb-10">
+      <div className="flex-1">
         <TrackList tracks={tracks} isLoading={isLoading} />
       </div>
 
@@ -120,18 +115,10 @@ export default function Folder() {
             <DialogTitle>Rename Folder</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleRename} className="space-y-4 pt-4">
-            <Input 
-              value={renameValue} 
-              onChange={(e) => setRenameValue(e.target.value)} 
-              autoFocus 
-            />
+            <Input value={renameValue} onChange={(e) => setRenameValue(e.target.value)} autoFocus />
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsRenameOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={!renameValue.trim() || renameFolder.isPending}>
-                Save
-              </Button>
+              <Button type="button" variant="outline" onClick={() => setIsRenameOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={!renameValue.trim() || renameFolder.isPending}>Save</Button>
             </DialogFooter>
           </form>
         </DialogContent>
