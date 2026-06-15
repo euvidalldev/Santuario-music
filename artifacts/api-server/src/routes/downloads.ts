@@ -65,7 +65,7 @@ async function fetchMeta(youtubeUrl: string): Promise<YtMeta> {
   };
 }
 
-async function runDownload(downloadId: number, youtubeUrl: string, folderId: number | null | undefined) {
+async function runDownload(downloadId: number, youtubeUrl: string, folderId: number | null | undefined, audioQuality = "128K") {
   try {
     await db.update(downloadsTable).set({ status: "downloading", progress: 0 }).where(eq(downloadsTable.id, downloadId));
 
@@ -88,7 +88,7 @@ async function runDownload(downloadId: number, youtubeUrl: string, folderId: num
       const proc = spawn(YT_DLP, [
         "--extract-audio",
         "--audio-format", "m4a",
-        "--audio-quality", "128K",
+        "--audio-quality", audioQuality,
         "--output", outputTemplate,
         "--no-playlist",
         "--no-warnings",
@@ -176,14 +176,14 @@ router.post("/downloads", async (req, res) => {
     res.status(400).json({ error: "Invalid input", details: parsed.error.issues });
     return;
   }
-  const { youtubeUrl, folderId } = parsed.data;
+  const { youtubeUrl, folderId, quality } = parsed.data;
 
   const [download] = await db
     .insert(downloadsTable)
     .values({ youtubeUrl, folderId: folderId ?? null, status: "pending" })
     .returning();
 
-  runDownload(download.id, youtubeUrl, folderId ?? null).catch(() => {});
+  runDownload(download.id, youtubeUrl, folderId ?? null, quality ?? "128K").catch(() => {});
 
   res.status(202).json(formatRow(download));
 });

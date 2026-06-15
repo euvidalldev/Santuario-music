@@ -8,6 +8,7 @@
 
 export * from './download';
 export * from './downloadInput';
+export * from './downloadInputQuality';
 export * from './downloadStatus';
 export * from './folder';
 export * from './folderInput';

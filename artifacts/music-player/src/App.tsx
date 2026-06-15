@@ -6,6 +6,7 @@ import { AppLayout } from "@/components/layout/app-layout";
 import Home from "@/pages/home";
 import Downloads from "@/pages/downloads";
 import Folder from "@/pages/folder";
+import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -17,6 +18,7 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/downloads" component={Downloads} />
         <Route path="/folders/:id" component={Folder} />
+        <Route path="/settings" component={Settings} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

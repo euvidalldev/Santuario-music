@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Home, Download, Library } from "lucide-react";
+import { Home, Download, Settings } from "lucide-react";
 
 export function MobileNav() {
   const [location] = useLocation();
@@ -7,6 +7,7 @@ export function MobileNav() {
   const items = [
     { href: "/", icon: Home, label: "Library" },
     { href: "/downloads", icon: Download, label: "Downloads" },
+    { href: "/settings", icon: Settings, label: "Settings" },
   ];
 
   return (

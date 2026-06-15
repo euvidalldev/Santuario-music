@@ -375,6 +375,10 @@ components:
           type: string
         folderId:
           type: ["integer", "null"]
+        quality:
+          type: string
+          enum: ["64K", "128K", "192K", "256K"]
+          description: Audio bitrate for AAC encoding (defaults to 128K)
 
     LibraryStats:
       type: object

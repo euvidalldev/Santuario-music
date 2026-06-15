@@ -69,6 +69,7 @@ export function Sidebar() {
       <div className="px-3 flex flex-col gap-1">
         <NavItem href="/" icon={Home} label="Library" isActive={location === "/"} />
         <NavItem href="/downloads" icon={Download} label="Downloads" isActive={location === "/downloads"} />
+        <NavItem href="/settings" icon={Settings} label="Settings" isActive={location === "/settings"} />
       </div>
 
       <div className="mt-8 px-6 flex items-center justify-between group">

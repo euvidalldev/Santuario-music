@@ -78,10 +78,25 @@ export interface Download {
   createdAt: string;
 }
 
+/**
+ * Audio bitrate for AAC encoding (defaults to 128K)
+ */
+export type DownloadInputQuality = typeof DownloadInputQuality[keyof typeof DownloadInputQuality];
+
+
+export const DownloadInputQuality = {
+  '64K': '64K',
+  '128K': '128K',
+  '192K': '192K',
+  '256K': '256K',
+} as const;
+
 export interface DownloadInput {
   youtubeUrl: string;
   /** @nullable */
   folderId?: number | null;
+  /** Audio bitrate for AAC encoding (defaults to 128K) */
+  quality?: DownloadInputQuality;
 }
 
 export interface LibraryStats {

@@ -5,9 +5,12 @@
  * Music Player API
  * OpenAPI spec version: 0.1.0
  */
+import type { DownloadInputQuality } from './downloadInputQuality';
 
 export interface DownloadInput {
   youtubeUrl: string;
   /** @nullable */
   folderId?: number | null;
+  /** Audio bitrate for AAC encoding (defaults to 128K) */
+  quality?: DownloadInputQuality;
 }

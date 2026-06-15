@@ -3,9 +3,11 @@ import { useListDownloads, useStartDownload, useCancelDownload, getListDownloads
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Download, AlertCircle, CheckCircle2, XCircle, RefreshCw, X, Folder as FolderIcon, Clock, Upload, Music, FileAudio } from "lucide-react";
+import { Download, CheckCircle2, XCircle, RefreshCw, X, Folder as FolderIcon, Clock, Upload, Music, FileAudio, Settings } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useSettings } from "@/hooks/use-settings";
+import { Link } from "wouter";
 
 interface UploadItem {
   name: string;
@@ -16,6 +18,7 @@ interface UploadItem {
 export default function Downloads() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { settings } = useSettings();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [url, setUrl] = useState("");
@@ -65,7 +68,8 @@ export default function Downloads() {
     startDownload.mutate({
       data: {
         youtubeUrl: url,
-        folderId: selectedFolder !== "none" ? parseInt(selectedFolder, 10) : null
+        folderId: selectedFolder !== "none" ? parseInt(selectedFolder, 10) : null,
+        quality: settings.downloadQuality,
       }
     });
   };
@@ -136,7 +140,15 @@ export default function Downloads() {
   return (
     <div className="flex flex-col min-h-full max-w-5xl mx-auto w-full">
       <div className="px-4 md:px-8 py-10 pt-10 md:pt-16 flex flex-col gap-8">
-        <h1 className="text-4xl font-bold tracking-tight text-foreground">Downloads</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-foreground">Downloads</h1>
+          <Link href="/settings">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card border border-border text-xs text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors cursor-pointer">
+              <Settings className="w-3.5 h-3.5" />
+              <span className="font-mono">{settings.downloadQuality} AAC</span>
+            </div>
+          </Link>
+        </div>
 
         {/* YouTube download form */}
         <div className="bg-card border border-border p-6 rounded-xl shadow-lg relative overflow-hidden">

@@ -124,10 +124,21 @@ router.get("/tracks/:id/download", async (req, res) => {
     return;
   }
   const stat = fs.statSync(absPath);
-  const safeFilename = `${track.title} - ${track.artist}.mp3`.replace(/[^\w\s\-().]/g, "_");
+  const ext = path.extname(absPath).toLowerCase() || ".m4a";
+  const mimeMap: Record<string, string> = {
+    ".m4a": "audio/mp4",
+    ".mp3": "audio/mpeg",
+    ".flac": "audio/flac",
+    ".wav": "audio/wav",
+    ".ogg": "audio/ogg",
+    ".opus": "audio/ogg",
+    ".aac": "audio/aac",
+  };
+  const contentType = mimeMap[ext] ?? "audio/mp4";
+  const safeFilename = `${track.title} - ${track.artist}${ext}`.replace(/[^\w\s\-().]/g, "_");
   res.writeHead(200, {
     "Content-Length": stat.size,
-    "Content-Type": "audio/mpeg",
+    "Content-Type": contentType,
     "Content-Disposition": `attachment; filename="${safeFilename}"`,
   });
   fs.createReadStream(absPath).pipe(res);

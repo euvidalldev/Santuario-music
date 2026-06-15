@@ -180,7 +180,8 @@ export const ListDownloadsResponse = zod.array(ListDownloadsResponseItem)
  */
 export const StartDownloadBody = zod.object({
   "youtubeUrl": zod.string(),
-  "folderId": zod.number().nullish()
+  "folderId": zod.number().nullish(),
+  "quality": zod.enum(['64K', '128K', '192K', '256K']).optional().describe('Audio bitrate for AAC encoding (defaults to 128K)')
 })
 
 
