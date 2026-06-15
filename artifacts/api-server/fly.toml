@@ -1,0 +1,24 @@
+app = "sanctuary-music"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+  NODE_ENV = "production"
+
+[[services]]
+  internal_port = 8080
+  protocol = "tcp"
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+  [[services.ports]]
+    port = 443
+    handlers = ["tls"]
+
+  [[services.concurrency]]
+    type = "connections"
+    hard_limit = 50
+    soft_limit = 25

@@ -18,7 +18,7 @@ if (!fs.existsSync(musicDir)) {
   fs.mkdirSync(musicDir, { recursive: true });
 }
 
-const YT_DLP = "/home/runner/workspace/.pythonlibs/bin/yt-dlp";
+const YT_DLP = process.env["YT_DLP_PATH"] || "yt-dlp";
 
 function formatRow(row: typeof downloadsTable.$inferSelect) {
   return {
