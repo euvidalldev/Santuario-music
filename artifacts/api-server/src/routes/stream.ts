@@ -26,12 +26,16 @@ function getCookiesArgs(req: import("express").Request): string[] {
   }
 }
 
-const EXTRACTOR_ARGS = ["--extractor-args", "youtube:player_client=android,web"];
+const EXTRACTOR_ARGS = [
+  "--extractor-args", "youtube:player_client=android",
+  "--extractor-args", "youtube:player_skip=webpage",
+];
 
 function runInfo(url: string, req: import("express").Request): Promise<string> {
   return new Promise((resolve, reject) => {
     const proc = spawn(YT_DLP, [
       "--dump-json", "--no-playlist", "--no-warnings",
+      "--verbose",
       "--user-agent", UA,
       ...EXTRACTOR_ARGS,
       ...getCookiesArgs(req), url,
@@ -40,7 +44,10 @@ function runInfo(url: string, req: import("express").Request): Promise<string> {
     let stderr = "";
     proc.stdout.on("data", (c: Buffer) => { stdout += c.toString(); });
     proc.stderr.on("data", (c: Buffer) => { stderr += c.toString(); });
-    proc.on("close", (code) => code === 0 ? resolve(stdout) : reject(new Error(stderr.slice(-400))));
+    proc.on("close", (code) => {
+      if (code === 0) return resolve(stdout);
+      reject(new Error(stderr.slice(-1000)));
+    });
     proc.on("error", reject);
   });
 }
@@ -88,6 +95,7 @@ router.get("/stream/audio", async (req, res) => {
         "--output", tmpOut,
         "--no-playlist",
         "--no-warnings",
+        "--verbose",
         "--user-agent", UA,
         ...EXTRACTOR_ARGS,
         ...getCookiesArgs(req),
