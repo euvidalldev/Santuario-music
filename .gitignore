@@ -53,3 +53,6 @@ Thumbs.db
 
 # Env files
 .env
+
+# yt-dlp / ytdl-core debug files
+*-player-script.js
