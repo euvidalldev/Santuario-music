@@ -9,5 +9,3 @@ services:
         value: "8080"
       - key: NODE_ENV
         value: production
-      - key: YT_DLP_PATH
-        value: /usr/local/bin/yt-dlp
