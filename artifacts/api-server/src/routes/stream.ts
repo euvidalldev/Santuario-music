@@ -33,6 +33,7 @@ function runInfo(url: string, req: import("express").Request): Promise<TrackMeta
     const proc = spawn(YT_DLP, [
       "--print", "%(title)s\t%(uploader)s\t%(duration)s\t%(thumbnail)s",
       "--no-playlist", "--no-warnings",
+      "-f", "worstaudio/worst",
       "--user-agent", UA,
       ...getCookiesArgs(req), url,
     ]);
