@@ -9,11 +9,18 @@ const router = Router();
 const YT_DLP = process.env["YT_DLP_PATH"] || "yt-dlp";
 
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36";
-const EXTRACTOR_ARGS = "youtube:player_client=android";
 
-function runInfo(url: string): Promise<string> {
+function getCookiesArgs(req: import("express").Request): string[] {
+  const cookies = req.headers["x-youtube-cookies"] as string | undefined;
+  if (!cookies) return [];
+  const tmpPath = path.join(os.tmpdir(), `cookies-${crypto.randomUUID()}.txt`);
+  fs.writeFileSync(tmpPath, cookies);
+  return ["--cookies", tmpPath];
+}
+
+function runInfo(url: string, req: import("express").Request): Promise<string> {
   return new Promise((resolve, reject) => {
-    const proc = spawn(YT_DLP, ["--dump-json", "--no-playlist", "--no-warnings", "--user-agent", UA, "--extractor-args", EXTRACTOR_ARGS, url]);
+    const proc = spawn(YT_DLP, ["--dump-json", "--no-playlist", "--no-warnings", "--user-agent", UA, ...getCookiesArgs(req), url]);
     let stdout = "";
     let stderr = "";
     proc.stdout.on("data", (c: Buffer) => { stdout += c.toString(); });
@@ -30,7 +37,7 @@ router.get("/stream/info", async (req, res) => {
   if (!url) { res.status(400).json({ error: "url parameter required" }); return; }
 
   try {
-    const json = await runInfo(url);
+    const json = await runInfo(url, req);
     const data = JSON.parse(json.split("\n")[0]);
     res.json({
       title:        data.title     ?? "Unknown Title",
@@ -67,7 +74,7 @@ router.get("/stream/audio", async (req, res) => {
         "--no-playlist",
         "--no-warnings",
         "--user-agent", UA,
-        "--extractor-args", EXTRACTOR_ARGS,
+        ...getCookiesArgs(req),
         url,
       ]);
       let stderr = "";

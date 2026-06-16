@@ -9,6 +9,7 @@ import { useState, useCallback } from "react";
 import { saveAudioFile, addTrack, newId, LocalTrack } from "@/lib/local-db";
 import { refreshLibrary } from "./use-local-library";
 import { getApiBaseUrl } from "@/lib/api-url";
+import { loadSettings } from "./use-settings";
 
 export type DownloadStatus = "idle" | "fetching_info" | "downloading" | "saving" | "done" | "error";
 
@@ -23,6 +24,13 @@ export interface DownloadItem {
 
 const BASE = () => getApiBaseUrl();
 
+function cookiesHeader(): Record<string, string> {
+  try {
+    const cookies = loadSettings().youtubeCookies;
+    return cookies ? { "x-youtube-cookies": cookies } : {};
+  } catch { return {}; }
+}
+
 export function useLocalDownload() {
   const [queue, setQueue] = useState<DownloadItem[]>([]);
 
@@ -36,7 +44,7 @@ export function useLocalDownload() {
 
     try {
       // Step 1: Fetch metadata
-      const infoRes = await fetch(`${BASE()}/api/stream/info?url=${encodeURIComponent(youtubeUrl)}`);
+      const infoRes = await fetch(`${BASE()}/api/stream/info?url=${encodeURIComponent(youtubeUrl)}`, { headers: cookiesHeader() });
       if (!infoRes.ok) {
         const errBody = await infoRes.text().catch(() => "");
         throw new Error(errBody ? `Info failed: ${errBody.slice(0, 300)}` : `Info failed (${infoRes.status})`);
@@ -46,7 +54,7 @@ export function useLocalDownload() {
 
       // Step 2: Stream audio with progress
       const audioUrl = `${BASE()}/api/stream/audio?url=${encodeURIComponent(youtubeUrl)}&quality=${quality}`;
-      const audioRes = await fetch(audioUrl);
+      const audioRes = await fetch(audioUrl, { headers: cookiesHeader() });
       if (!audioRes.ok) throw new Error(`Download failed: ${audioRes.statusText}`);
 
       const contentLength = audioRes.headers.get("Content-Length");

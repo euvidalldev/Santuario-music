@@ -4,21 +4,23 @@ export type DownloadQuality = "64K" | "128K" | "192K" | "256K";
 
 export interface AppSettings {
   downloadQuality: DownloadQuality;
+  youtubeCookies: string;
 }
 
 const STORAGE_KEY = "sanctuary_settings";
 
-function loadSettings(): AppSettings {
+export function loadSettings(): AppSettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<AppSettings>;
       return {
         downloadQuality: parsed.downloadQuality ?? "128K",
+        youtubeCookies: parsed.youtubeCookies ?? "",
       };
     }
   } catch {}
-  return { downloadQuality: "128K" };
+  return { downloadQuality: "128K", youtubeCookies: "" };
 }
 
 function saveSettings(settings: AppSettings) {

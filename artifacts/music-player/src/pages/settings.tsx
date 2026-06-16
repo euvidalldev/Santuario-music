@@ -1,5 +1,5 @@
-import React from "react";
-import { Settings as SettingsIcon, Zap } from "lucide-react";
+import React, { useState } from "react";
+import { Settings as SettingsIcon, Zap, Cookie } from "lucide-react";
 import { useSettings, type DownloadQuality } from "@/hooks/use-settings";
 import { useToast } from "@/hooks/use-toast";
 
@@ -67,6 +67,30 @@ export default function Settings() {
                 </button>
               );
             })}
+          </div>
+        </div>
+
+        {/* YouTube Cookies */}
+        <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-border/50 flex items-center gap-2">
+            <Cookie className="w-4 h-4 text-primary" />
+            <div>
+              <p className="text-sm font-semibold text-foreground">YouTube Cookies</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Required to bypass YouTube bot detection. Export from browser with "Get cookies.txt LOCALLY" extension and paste below.
+              </p>
+            </div>
+          </div>
+          <div className="px-5 py-4">
+            <textarea
+              className="w-full h-32 bg-secondary/50 border border-border rounded-lg p-3 text-xs font-mono text-foreground resize-y"
+              placeholder="Paste your YouTube cookies here (Netscape format)..."
+              value={settings.youtubeCookies}
+              onChange={(e) => setSettings({ youtubeCookies: e.target.value })}
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              Your cookies are stored locally and never shared.
+            </p>
           </div>
         </div>
 
