@@ -40,8 +40,10 @@ router.get("/stream/info", async (req, res) => {
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    req.log.error({ err }, "stream/info failed");
-    res.status(500).json({ error: msg.slice(0, 300) });
+    const stack = err instanceof Error ? err.stack?.slice(0, 500) : "";
+    const full = err instanceof Error && (err as any).response ? JSON.stringify((err as any).response).slice(0, 500) : "";
+    req.log.error({ err, stack }, "stream/info failed");
+    res.status(500).json({ error: msg.slice(0, 300), detail: stack?.slice(0, 500), response: full });
   }
 });
 
