@@ -18,7 +18,7 @@ app = "sanctuary-music"
     port = 443
     handlers = ["tls"]
 
-  [[services.concurrency]]
+  [services.concurrency]
     type = "connections"
     hard_limit = 50
     soft_limit = 25

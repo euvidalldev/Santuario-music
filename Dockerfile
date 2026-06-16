@@ -1,14 +1,18 @@
 FROM node:22-slim AS base
+WORKDIR /app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+RUN corepack enable && pnpm --version
 
-FROM base AS build
-COPY . /usr/src/app
-WORKDIR /usr/src/app
+FROM base AS deps
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc ./
+COPY lib/ ./lib/
+COPY artifacts/api-server ./artifacts/api-server
+RUN pnpm install --frozen-lockfile
 
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
-RUN pnpm run build
+FROM deps AS build
+COPY . .
+RUN pnpm --filter @workspace/api-server run build
 
 FROM base
 RUN apt-get update && apt-get install -y python3 python3-pip ffmpeg && \
@@ -17,8 +21,7 @@ RUN apt-get update && apt-get install -y python3 python3-pip ffmpeg && \
 
 ENV YT_DLP_PATH=/usr/local/bin/yt-dlp
 
-COPY --from=build /usr/src/app /usr/src/app
-WORKDIR /usr/src/app
+COPY --from=build /app /app
 
 EXPOSE 8080
 CMD ["pnpm", "--filter", "@workspace/api-server", "start"]

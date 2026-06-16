@@ -1,0 +1,16 @@
+node_modules
+**/node_modules
+.pnpm-store
+.git
+music
+attached_assets
+artifacts/mockup-sandbox
+artifacts/music-player/dist
+artifacts/music-player/android
+artifacts/music-player/ios
+artifacts/api-server/dist
+artifacts/api-server/music
+scripts
+*.md
+.DS_Store
+thumbs.db
