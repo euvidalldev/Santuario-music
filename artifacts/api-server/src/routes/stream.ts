@@ -26,9 +26,16 @@ function getCookiesArgs(req: import("express").Request): string[] {
   }
 }
 
+function ytArgs(): string[] {
+  return [
+    "--extractor-args", "youtube:player_client=android",
+    "--user-agent", UA,
+  ];
+}
+
 function runInfo(url: string, req: import("express").Request): Promise<string> {
   return new Promise((resolve, reject) => {
-    const proc = spawn(YT_DLP, ["--dump-json", "--no-playlist", "--no-warnings", "--user-agent", UA, ...getCookiesArgs(req), url]);
+    const proc = spawn(YT_DLP, ["--dump-json", "--no-playlist", "--no-warnings", "-f", "bestaudio/best", ...ytArgs(), ...getCookiesArgs(req), url]);
     let stdout = "";
     let stderr = "";
     proc.stdout.on("data", (c: Buffer) => { stdout += c.toString(); });
@@ -81,7 +88,7 @@ router.get("/stream/audio", async (req, res) => {
         "--output", tmpOut,
         "--no-playlist",
         "--no-warnings",
-        "--user-agent", UA,
+        ...ytArgs(),
         ...getCookiesArgs(req),
         url,
       ]);
