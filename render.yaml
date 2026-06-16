@@ -2,7 +2,7 @@ services:
   - type: web
     name: sanctuary-api
     env: node
-    buildCommand: pip install yt-dlp --break-system-packages && pnpm install && pnpm --filter @workspace/api-server run build
+    buildCommand: pnpm install && pnpm --filter @workspace/api-server run build
     startCommand: pnpm --filter @workspace/api-server start
     envVars:
       - key: PORT
