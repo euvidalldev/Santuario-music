@@ -1,13 +1,17 @@
-import { useState, useRef, useEffect } from "react";
-import { Track } from "@workspace/api-client-react";
+import { useState, useEffect } from "react";
+import { LocalTrack, getAudioSrc } from "@/lib/local-db";
+
+export interface PlayableTrack extends LocalTrack {
+  audioSrc: string;
+}
 
 type PlayerState = {
-  currentTrack: Track | null;
+  currentTrack: PlayableTrack | null;
   isPlaying: boolean;
-  progress: number; // 0 to 1
-  currentTime: number; // seconds
-  volume: number; // 0 to 1
-  queue: Track[];
+  progress: number;
+  currentTime: number;
+  volume: number;
+  queue: PlayableTrack[];
 };
 
 let globalState: PlayerState = {
@@ -20,54 +24,53 @@ let globalState: PlayerState = {
 };
 
 const listeners = new Set<() => void>();
+function notify() { listeners.forEach(l => l()); }
 
-function notify() {
-  listeners.forEach((l) => l());
-}
+export async function playTrack(track: LocalTrack, queue: LocalTrack[] = []) {
+  const audioSrc = await getAudioSrc(track);
+  const playable: PlayableTrack = { ...track, audioSrc };
 
-export function playTrack(track: Track, queue: Track[] = []) {
+  // Resolve queue src lazily — only the current track needs to be resolved immediately
+  const playableQueue: PlayableTrack[] = queue.map(t =>
+    t.id === track.id ? playable : { ...t, audioSrc: "" }
+  );
+
   globalState = {
     ...globalState,
-    currentTrack: track,
+    currentTrack: playable,
     isPlaying: true,
     progress: 0,
     currentTime: 0,
-    queue: queue.length > 0 ? queue : globalState.queue,
+    queue: playableQueue.length > 0 ? playableQueue : globalState.queue,
   };
   notify();
 }
 
 export function togglePlayPause() {
   if (!globalState.currentTrack) return;
-  globalState = {
-    ...globalState,
-    isPlaying: !globalState.isPlaying,
-  };
+  globalState = { ...globalState, isPlaying: !globalState.isPlaying };
   notify();
 }
 
-export function nextTrack() {
+export async function nextTrack() {
   if (!globalState.currentTrack || globalState.queue.length === 0) return;
-  const currentIndex = globalState.queue.findIndex((t) => t.id === globalState.currentTrack?.id);
-  if (currentIndex === -1 || currentIndex === globalState.queue.length - 1) return;
-  
-  playTrack(globalState.queue[currentIndex + 1], globalState.queue);
+  const idx = globalState.queue.findIndex(t => t.id === globalState.currentTrack?.id);
+  if (idx === -1 || idx === globalState.queue.length - 1) return;
+  const next = globalState.queue[idx + 1];
+  await playTrack(next, globalState.queue);
 }
 
-export function prevTrack() {
+export async function prevTrack() {
   if (!globalState.currentTrack || globalState.queue.length === 0) return;
-  
-  // If we're more than 3 seconds in, just restart current track
   if (globalState.currentTime > 3) {
     globalState = { ...globalState, currentTime: 0, progress: 0 };
     notify();
     return;
   }
-  
-  const currentIndex = globalState.queue.findIndex((t) => t.id === globalState.currentTrack?.id);
-  if (currentIndex <= 0) return;
-  
-  playTrack(globalState.queue[currentIndex - 1], globalState.queue);
+  const idx = globalState.queue.findIndex(t => t.id === globalState.currentTrack?.id);
+  if (idx <= 0) return;
+  const prev = globalState.queue[idx - 1];
+  await playTrack(prev, globalState.queue);
 }
 
 export function setVolume(volume: number) {
@@ -77,15 +80,14 @@ export function setVolume(volume: number) {
 
 export function seekTo(time: number) {
   if (!globalState.currentTrack) return;
-  globalState = { 
-    ...globalState, 
+  globalState = {
+    ...globalState,
     currentTime: time,
-    progress: time / globalState.currentTrack.duration
+    progress: time / (globalState.currentTrack.duration || 1),
   };
   notify();
 }
 
-// Private updates from the audio element
 export function updateProgress(currentTime: number, duration: number) {
   globalState = {
     ...globalState,
@@ -95,20 +97,14 @@ export function updateProgress(currentTime: number, duration: number) {
   notify();
 }
 
-export function handleTrackEnd() {
-  nextTrack();
-}
+export function handleTrackEnd() { nextTrack(); }
 
 export function usePlayer() {
   const [state, setState] = useState(globalState);
-
   useEffect(() => {
-    const listener = () => setState(globalState);
-    listeners.add(listener);
-    return () => {
-      listeners.delete(listener);
-    };
+    const l = () => setState({ ...globalState });
+    listeners.add(l);
+    return () => { listeners.delete(l); };
   }, []);
-
   return state;
 }

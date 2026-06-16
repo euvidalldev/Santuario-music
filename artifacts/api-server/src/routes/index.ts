@@ -5,10 +5,12 @@ import tracksRouter from "./tracks";
 import downloadsRouter from "./downloads";
 import statsRouter from "./stats";
 import uploadRouter from "./upload";
+import streamRouter from "./stream";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(streamRouter);
 router.use(foldersRouter);
 router.use(uploadRouter);
 router.use(tracksRouter);
