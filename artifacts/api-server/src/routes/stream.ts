@@ -8,9 +8,11 @@ import crypto from "crypto";
 const router = Router();
 const YT_DLP = process.env["YT_DLP_PATH"] || "yt-dlp";
 
+const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36";
+
 function runInfo(url: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    const proc = spawn(YT_DLP, ["--dump-json", "--no-playlist", "--no-warnings", url]);
+    const proc = spawn(YT_DLP, ["--dump-json", "--no-playlist", "--no-warnings", "--user-agent", UA, url]);
     let stdout = "";
     let stderr = "";
     proc.stdout.on("data", (c: Buffer) => { stdout += c.toString(); });
@@ -63,6 +65,7 @@ router.get("/stream/audio", async (req, res) => {
         "--output", tmpOut,
         "--no-playlist",
         "--no-warnings",
+        "--user-agent", UA,
         url,
       ]);
       let stderr = "";

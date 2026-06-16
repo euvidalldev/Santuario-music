@@ -12,16 +12,13 @@
 import { Capacitor } from "@capacitor/core";
 
 export function getApiBaseUrl(): string {
+  const envUrl = import.meta.env.VITE_API_URL as string | undefined;
+  if (envUrl) return envUrl;
   if (Capacitor.isNativePlatform()) {
-    const url = import.meta.env.VITE_API_URL as string | undefined;
-    if (!url) {
-      console.warn(
-        "[Sanctuary] VITE_API_URL is not set — API calls may fail on device. " +
-        "Rebuild with VITE_API_URL=https://your-app.replit.app pnpm build:cap"
-      );
-    }
-    return url ?? "";
+    console.warn(
+      "[Sanctuary] VITE_API_URL is not set — API calls may fail on device. " +
+      "Rebuild with VITE_API_URL=https://your-app.replit.app pnpm build:cap"
+    );
   }
-  // Web: relative URLs work via the Replit proxy
   return "";
 }

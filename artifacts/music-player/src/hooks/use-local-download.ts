@@ -37,7 +37,10 @@ export function useLocalDownload() {
     try {
       // Step 1: Fetch metadata
       const infoRes = await fetch(`${BASE()}/api/stream/info?url=${encodeURIComponent(youtubeUrl)}`);
-      if (!infoRes.ok) throw new Error(`Info failed: ${infoRes.statusText}`);
+      if (!infoRes.ok) {
+        const errBody = await infoRes.text().catch(() => "");
+        throw new Error(errBody ? `Info failed: ${errBody.slice(0, 300)}` : `Info failed (${infoRes.status})`);
+      }
       const info = await infoRes.json() as { title: string; artist: string; duration: number; thumbnailUrl: string | null };
       updateItem(itemId, { title: info.title, status: "downloading" });
 
