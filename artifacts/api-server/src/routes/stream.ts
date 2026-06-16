@@ -18,7 +18,16 @@ router.get("/stream/info", async (req, res) => {
         .filter(l => l && !l.startsWith("#"))
         .map(l => l.split("\t"))
         .filter(p => p.length >= 7)
-        .map(p => ({ name: p[5], value: p[6] }));
+        .map(p => ({
+          name: p[5],
+          value: p[6],
+          domain: p[0],
+          path: p[2],
+          secure: p[3] === "TRUE",
+          httpOnly: p[1] !== "TRUE",
+          hostOnly: false,
+          expirationDate: parseInt(p[4], 10) || undefined,
+        }));
       opts.agent = ytdl.createAgent(cookies);
     }
     const info = await ytdl.getInfo(url, opts);
@@ -57,7 +66,16 @@ router.get("/stream/audio", async (req, res) => {
         .filter(l => l && !l.startsWith("#"))
         .map(l => l.split("\t"))
         .filter(p => p.length >= 7)
-        .map(p => ({ name: p[5], value: p[6] }));
+        .map(p => ({
+          name: p[5],
+          value: p[6],
+          domain: p[0],
+          path: p[2],
+          secure: p[3] === "TRUE",
+          httpOnly: p[1] !== "TRUE",
+          hostOnly: false,
+          expirationDate: parseInt(p[4], 10) || undefined,
+        }));
       opts.agent = ytdl.createAgent(cookies);
     }
     const stream = ytdl(url, opts);
