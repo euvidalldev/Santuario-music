@@ -27,7 +27,9 @@ const BASE = () => getApiBaseUrl();
 function cookiesHeader(): Record<string, string> {
   try {
     const cookies = loadSettings().youtubeCookies;
-    return cookies ? { "x-youtube-cookies": cookies } : {};
+    if (!cookies) return {};
+    const encoded = btoa(cookies);
+    return { "x-youtube-cookies": encoded };
   } catch { return {}; }
 }
 

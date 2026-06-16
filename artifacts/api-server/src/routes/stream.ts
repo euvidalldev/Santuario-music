@@ -11,11 +11,16 @@ const YT_DLP = process.env["YT_DLP_PATH"] || "yt-dlp";
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36";
 
 function getCookiesArgs(req: import("express").Request): string[] {
-  const cookies = req.headers["x-youtube-cookies"] as string | undefined;
-  if (!cookies) return [];
-  const tmpPath = path.join(os.tmpdir(), `cookies-${crypto.randomUUID()}.txt`);
-  fs.writeFileSync(tmpPath, cookies);
-  return ["--cookies", tmpPath];
+  const raw = req.headers["x-youtube-cookies"] as string | undefined;
+  if (!raw) return [];
+  try {
+    const cookies = Buffer.from(raw, "base64").toString("utf-8");
+    const tmpPath = path.join(os.tmpdir(), `cookies-${crypto.randomUUID()}.txt`);
+    fs.writeFileSync(tmpPath, cookies);
+    return ["--cookies", tmpPath];
+  } catch {
+    return [];
+  }
 }
 
 function runInfo(url: string, req: import("express").Request): Promise<string> {
