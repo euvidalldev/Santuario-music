@@ -144,6 +144,9 @@ importers:
 
   .:
     devDependencies:
+      '@distube/ytdl-core':
+        specifier: ^4.16.12
+        version: 4.16.12
       prettier:
         specifier: ^3.8.3
         version: 3.8.3
@@ -153,9 +156,6 @@ importers:
 
   artifacts/api-server:
     dependencies:
-      '@distube/ytdl-core':
-        specifier: ^4.16.12
-        version: 4.16.12
       cors:
         specifier: ^2.8.6
         version: 2.8.6

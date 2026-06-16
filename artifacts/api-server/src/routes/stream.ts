@@ -1,7 +1,5 @@
 import { Router } from "express";
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-const ytdl = require("@distube/ytdl-core");
+import ytdl from "@distube/ytdl-core";
 
 const router = Router();
 
