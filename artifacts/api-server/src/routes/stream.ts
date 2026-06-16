@@ -30,7 +30,6 @@ function runInfo(url: string, req: import("express").Request): Promise<string> {
   return new Promise((resolve, reject) => {
     const proc = spawn(YT_DLP, [
       "--dump-json", "--no-playlist", "--no-warnings",
-      "-f", "bestaudio[ext=m4a]/bestaudio/best",
       "--user-agent", UA,
       ...getCookiesArgs(req), url,
     ]);
