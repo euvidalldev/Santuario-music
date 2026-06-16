@@ -14,7 +14,10 @@ function getCookiesArgs(req: import("express").Request): string[] {
   const raw = req.headers["x-youtube-cookies"] as string | undefined;
   if (!raw) return [];
   try {
-    const cookies = Buffer.from(raw, "base64").toString("utf-8");
+    let cookies = Buffer.from(raw, "base64").toString("utf-8");
+    if (!cookies.startsWith("#")) {
+      cookies = "# Netscape HTTP Cookie File\n" + cookies;
+    }
     const tmpPath = path.join(os.tmpdir(), `cookies-${crypto.randomUUID()}.txt`);
     fs.writeFileSync(tmpPath, cookies);
     return ["--cookies", tmpPath];
