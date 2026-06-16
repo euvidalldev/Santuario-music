@@ -28,14 +28,12 @@ function getCookiesArgs(req: import("express").Request): string[] {
 
 const EXTRACTOR_ARGS = [
   "--extractor-args", "youtube:player_client=android",
-  "--extractor-args", "youtube:player_skip=webpage",
 ];
 
 function runInfo(url: string, req: import("express").Request): Promise<string> {
   return new Promise((resolve, reject) => {
     const proc = spawn(YT_DLP, [
       "--dump-json", "--no-playlist", "--no-warnings",
-      "--verbose",
       "--user-agent", UA,
       ...EXTRACTOR_ARGS,
       ...getCookiesArgs(req), url,
@@ -95,7 +93,6 @@ router.get("/stream/audio", async (req, res) => {
         "--output", tmpOut,
         "--no-playlist",
         "--no-warnings",
-        "--verbose",
         "--user-agent", UA,
         ...EXTRACTOR_ARGS,
         ...getCookiesArgs(req),
