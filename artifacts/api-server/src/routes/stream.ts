@@ -26,10 +26,13 @@ function getCookiesArgs(req: import("express").Request): string[] {
   }
 }
 
-function runInfo(url: string, req: import("express").Request): Promise<string> {
+interface TrackMeta { title: string; artist: string; duration: number; thumbnailUrl: string | null; }
+
+function runInfo(url: string, req: import("express").Request): Promise<TrackMeta> {
   return new Promise((resolve, reject) => {
     const proc = spawn(YT_DLP, [
-      "--dump-json", "--no-playlist", "--no-warnings",
+      "--print", "%(title)s\t%(uploader)s\t%(duration)s\t%(thumbnail)s",
+      "--no-playlist", "--no-warnings",
       "--user-agent", UA,
       ...getCookiesArgs(req), url,
     ]);
@@ -38,8 +41,14 @@ function runInfo(url: string, req: import("express").Request): Promise<string> {
     proc.stdout.on("data", (c: Buffer) => { stdout += c.toString(); });
     proc.stderr.on("data", (c: Buffer) => { stderr += c.toString(); });
     proc.on("close", (code) => {
-      if (code === 0) return resolve(stdout);
-      reject(new Error(stderr.slice(-1000)));
+      if (code !== 0) return reject(new Error(stderr.slice(-500)));
+      const parts = stdout.trim().split("\t");
+      resolve({
+        title:        parts[0] || "Unknown Title",
+        artist:       parts[1] || "Unknown Artist",
+        duration:     parseFloat(parts[2]) || 0,
+        thumbnailUrl: parts[3] || null,
+      });
     });
     proc.on("error", reject);
   });
@@ -52,14 +61,8 @@ router.get("/stream/info", async (req, res) => {
   if (!url) { res.status(400).json({ error: "url parameter required" }); return; }
 
   try {
-    const json = await runInfo(url, req);
-    const data = JSON.parse(json.split("\n")[0]);
-    res.json({
-      title:        data.title     ?? "Unknown Title",
-      artist:       data.uploader  ?? data.channel ?? "Unknown Artist",
-      duration:     data.duration  ?? 0,
-      thumbnailUrl: data.thumbnail ?? null,
-    });
+    const data = await runInfo(url, req);
+    res.json(data);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     req.log.error({ err }, "stream/info failed");
