@@ -3,34 +3,25 @@ import ytdl from "@distube/ytdl-core";
 
 const router = Router();
 
-function getCookieString(req: import("express").Request): string | undefined {
-  const raw = req.headers["x-youtube-cookies"] as string | undefined;
-  if (!raw) return undefined;
-  try {
-    const txt = Buffer.from(raw, "base64").toString("utf-8");
-    // Netscape format: domain, flag, path, secure, exp, name, value
-    const cookies = txt.split("\n")
-      .map(l => l.trim())
-      .filter(l => l && !l.startsWith("#"))
-      .map(l => l.split("\t"))
-      .filter(p => p.length >= 7)
-      .map(p => `${p[5]}=${p[6]}`);
-    return cookies.join("; ");
-  } catch {
-    return undefined;
-  }
-}
-
 // GET /api/stream/info?url=<youtube-url>
 router.get("/stream/info", async (req, res) => {
   const url = req.query.url as string | undefined;
   if (!url) { res.status(400).json({ error: "url parameter required" }); return; }
 
   try {
-    const cookie = getCookieString(req);
-    const info = await ytdl.getInfo(url, {
-      requestOptions: cookie ? { headers: { Cookie: cookie } } : undefined,
-    });
+    const raw = req.headers["x-youtube-cookies"] as string | undefined;
+    const opts: any = {};
+    if (raw) {
+      const txt = Buffer.from(raw, "base64").toString("utf-8");
+      const cookies = txt.split("\n")
+        .map(l => l.trim())
+        .filter(l => l && !l.startsWith("#"))
+        .map(l => l.split("\t"))
+        .filter(p => p.length >= 7)
+        .map(p => ({ name: p[5], value: p[6] }));
+      opts.agent = ytdl.createAgent(cookies);
+    }
+    const info = await ytdl.getInfo(url, opts);
     const d = info.videoDetails;
     res.json({
       title:        d.title ?? "Unknown Title",
@@ -46,7 +37,6 @@ router.get("/stream/info", async (req, res) => {
 });
 
 // GET /api/stream/audio?url=<youtube-url>&quality=lowest
-// Streams audio directly from YouTube to the client (proxies the stream).
 router.get("/stream/audio", async (req, res) => {
   const url     = req.query.url     as string | undefined;
   const quality = (req.query.quality as string) ?? "lowest";
@@ -54,13 +44,23 @@ router.get("/stream/audio", async (req, res) => {
   if (!url) { res.status(400).json({ error: "url parameter required" }); return; }
 
   try {
-    const cookie = getCookieString(req);
-    const stream = ytdl(url, {
+    const raw = req.headers["x-youtube-cookies"] as string | undefined;
+    const opts: any = {
       quality: quality === "128K" ? "lowest" : quality,
       filter: "audioonly",
       highWaterMark: 1 << 25,
-      requestOptions: cookie ? { headers: { Cookie: cookie } } : undefined,
-    });
+    };
+    if (raw) {
+      const txt = Buffer.from(raw, "base64").toString("utf-8");
+      const cookies = txt.split("\n")
+        .map(l => l.trim())
+        .filter(l => l && !l.startsWith("#"))
+        .map(l => l.split("\t"))
+        .filter(p => p.length >= 7)
+        .map(p => ({ name: p[5], value: p[6] }));
+      opts.agent = ytdl.createAgent(cookies);
+    }
+    const stream = ytdl(url, opts);
 
     res.setHeader("Content-Type", "audio/webm");
     res.setHeader("Transfer-Encoding", "chunked");
