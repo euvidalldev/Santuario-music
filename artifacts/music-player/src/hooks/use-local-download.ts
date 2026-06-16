@@ -24,6 +24,16 @@ export interface DownloadItem {
 
 const BASE = () => getApiBaseUrl();
 
+function cleanUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    u.searchParams.delete("list");
+    u.searchParams.delete("start_radio");
+    u.searchParams.delete("pp");
+    return u.toString();
+  } catch { return url; }
+}
+
 function cookiesHeader(): Record<string, string> {
   try {
     const cookies = loadSettings().youtubeCookies;
@@ -46,7 +56,8 @@ export function useLocalDownload() {
 
     try {
       // Step 1: Fetch metadata
-      const infoRes = await fetch(`${BASE()}/api/stream/info?url=${encodeURIComponent(youtubeUrl)}`, { headers: cookiesHeader() });
+      const cleanedUrl = cleanUrl(youtubeUrl);
+      const infoRes = await fetch(`${BASE()}/api/stream/info?url=${encodeURIComponent(cleanedUrl)}`, { headers: cookiesHeader() });
       if (!infoRes.ok) {
         const errBody = await infoRes.text().catch(() => "");
         throw new Error(errBody ? `Info failed: ${errBody.slice(0, 300)}` : `Info failed (${infoRes.status})`);
@@ -55,7 +66,7 @@ export function useLocalDownload() {
       updateItem(itemId, { title: info.title, status: "downloading" });
 
       // Step 2: Stream audio with progress
-      const audioUrl = `${BASE()}/api/stream/audio?url=${encodeURIComponent(youtubeUrl)}&quality=${quality}`;
+      const audioUrl = `${BASE()}/api/stream/audio?url=${encodeURIComponent(cleanedUrl)}&quality=${quality}`;
       const audioRes = await fetch(audioUrl, { headers: cookiesHeader() });
       if (!audioRes.ok) throw new Error(`Download failed: ${audioRes.statusText}`);
 
