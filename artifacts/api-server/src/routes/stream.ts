@@ -20,8 +20,13 @@ function cookiesArgs(req: import("express").Request): string[] {
     if (!txt.startsWith("#")) txt = "# Netscape HTTP Cookie File\n" + txt;
     const p = path.join(os.tmpdir(), `cookies-${crypto.randomUUID()}.txt`);
     fs.writeFileSync(p, txt);
+    const lines = txt.split("\n").filter(l => l && !l.startsWith("#"));
+    req.log.info({ cookieCount: lines.length, firstCookie: lines[0]?.split("\t")[5] }, "cookies received");
     return ["--cookies", p];
-  } catch { return []; }
+  } catch (e) {
+    req.log.error({ err: e }, "cookies parse failed");
+    return [];
+  }
 }
 
 // GET /api/stream/info?url=<youtube-url>
@@ -30,6 +35,7 @@ router.get("/stream/info", async (req, res) => {
   if (!url) { res.status(400).json({ error: "url parameter required" }); return; }
 
   try {
+    req.log.info({ url }, "stream/info request");
     const out = await new Promise<string>((resolve, reject) => {
       const proc = spawn(YT_DLP, [
         "--dump-json", "--no-playlist", "--no-warnings",
