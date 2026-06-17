@@ -71,15 +71,16 @@ router.get("/stream/audio", async (req, res) => {
   const quality = (req.query.quality as string) ?? "128K";
   if (!url) { res.status(400).json({ error: "url parameter required" }); return; }
 
-  const format = quality === "lowest" ? "worstaudio/worst" : "bestaudio[ext=m4a]/bestaudio/best";
+  const fmt = quality === "lowest" ? "worstaudio/worst" : "worstaudio/worst";
 
   try {
     // Step 1: yt-dlp --get-url to get the direct stream URL
     const audioUrl = await new Promise<string>((resolve, reject) => {
       const proc = spawn(YT_DLP, [
         "--get-url", "--no-playlist", "--no-warnings",
-        "-f", format,
+        "-f", fmt,
         "--user-agent", UA,
+        ...EXTRACTOR,
         ...cookiesArgs(req), url,
       ]);
       let o = "", e = "";
