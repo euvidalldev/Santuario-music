@@ -9,7 +9,7 @@ import crypto from "crypto";
 const router = Router();
 const YT_DLP = process.env["YT_DLP_PATH"] || "yt-dlp";
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (like Gecko) Chrome/149.0.0.0 Safari/537.36";
-const EXTRACTOR = ["--extractor-args", "youtube:player_client=mweb"];
+const EXTRACTOR = ["--extractor-args", "youtube:player_client=web_embedded"];
 const COOKIES_HEADER = "x-youtube-cookies";
 
 function cookiesArgs(req: import("express").Request): string[] {
