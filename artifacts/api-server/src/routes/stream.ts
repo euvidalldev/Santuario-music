@@ -9,7 +9,7 @@ import crypto from "crypto";
 const router = Router();
 const YT_DLP = process.env["YT_DLP_PATH"] || "yt-dlp";
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (like Gecko) Chrome/149.0.0.0 Safari/537.36";
-const EXTRACTOR = ["--extractor-args", "youtube:player_client=android"];
+const FORMAT = ["-f", "worstaudio/worst"];
 const COOKIES_HEADER = "x-youtube-cookies";
 
 function cookiesArgs(req: import("express").Request): string[] {
@@ -34,7 +34,7 @@ router.get("/stream/info", async (req, res) => {
       const proc = spawn(YT_DLP, [
         "--dump-json", "--no-playlist", "--no-warnings",
         "--user-agent", UA,
-        ...EXTRACTOR,
+        ...FORMAT,
         ...cookiesArgs(req), url,
       ]);
       let o = "", e = "";
@@ -74,7 +74,6 @@ router.get("/stream/audio", async (req, res) => {
         "--get-url", "--no-playlist", "--no-warnings",
         "-f", format,
         "--user-agent", UA,
-        ...EXTRACTOR,
         ...cookiesArgs(req), url,
       ]);
       let o = "", e = "";
