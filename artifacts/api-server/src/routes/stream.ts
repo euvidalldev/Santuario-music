@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { spawn } from "child_process";
+import { Readable } from "stream";
 import fs from "fs";
 import path from "path";
 import os from "os";
@@ -58,55 +59,63 @@ router.get("/stream/info", async (req, res) => {
 });
 
 // GET /api/stream/audio?url=<youtube-url>&quality=128K
+// Gets the direct audio URL from yt-dlp and proxies the stream.
 router.get("/stream/audio", async (req, res) => {
   const url = req.query.url as string | undefined;
   const quality = (req.query.quality as string) ?? "128K";
   if (!url) { res.status(400).json({ error: "url parameter required" }); return; }
 
-  const uid = crypto.randomUUID();
-  const tmp = path.join(os.tmpdir(), `sanctuary-${uid}`);
+  const format = quality === "lowest" ? "worstaudio/worst" : "bestaudio[ext=m4a]/bestaudio/best";
 
   try {
-    await new Promise<void>((resolve, reject) => {
+    // Step 1: yt-dlp --get-url to get the direct stream URL
+    const audioUrl = await new Promise<string>((resolve, reject) => {
       const proc = spawn(YT_DLP, [
-        "--extract-audio",
-        "--audio-format", "m4a",
-        "--audio-quality", quality,
-        "--output", `${tmp}.%(ext)s`,
-        "--no-playlist", "--no-warnings",
+        "--get-url", "--no-playlist", "--no-warnings",
+        "-f", format,
         "--user-agent", UA,
         ...EXTRACTOR,
         ...cookiesArgs(req), url,
       ]);
-      let e = "";
+      let o = "", e = "";
+      proc.stdout.on("data", (c: Buffer) => o += c);
       proc.stderr.on("data", (c: Buffer) => e += c);
-      proc.on("close", code => code === 0 ? resolve() : reject(new Error(e.slice(-300))));
+      proc.on("close", code => code === 0 ? resolve(o.trim()) : reject(new Error(e.slice(-300))));
       proc.on("error", reject);
     });
 
-    let file = "";
-    for (const ext of [".m4a", ".mp4", ".aac", ".mp3"]) {
-      const c = `${tmp}${ext}`;
-      if (fs.existsSync(c)) { file = c; break; }
+    if (!audioUrl) {
+      res.status(500).json({ error: "Could not get audio URL" });
+      return;
     }
-    if (!file) { res.status(500).json({ error: "File not found after download" }); return; }
 
-    const stat = fs.statSync(file);
-    res.setHeader("Content-Type", "audio/mp4");
-    res.setHeader("Content-Length", stat.size);
-    res.setHeader("Content-Disposition", "attachment");
+    req.log.info({ audioUrl: audioUrl.slice(0, 80) }, "stream/audio got URL");
+
+    // Step 2: Proxy the audio stream
+    const controller = new AbortController();
+    const audioRes = await fetch(audioUrl, { signal: controller.signal });
+
+    if (!audioRes.ok || !audioRes.body) {
+      res.status(502).json({ error: `Audio source returned ${audioRes.status}` });
+      return;
+    }
+
+    const contentType = audioRes.headers.get("content-type") || "audio/mp4";
+    const contentLength = audioRes.headers.get("content-length");
+
+    res.setHeader("Content-Type", contentType);
     res.setHeader("Access-Control-Expose-Headers", "Content-Length");
+    if (contentLength) res.setHeader("Content-Length", contentLength);
 
-    const s = fs.createReadStream(file);
-    s.pipe(res);
-    const clean = () => fs.unlink(file, () => {});
-    s.on("end", clean);
-    res.on("close", clean);
-    res.on("finish", clean);
+    // ReadableStream → Node.js Readable → pipe to response
+    const nodeStream = Readable.from(audioRes.body as any);
+    nodeStream.pipe(res);
+
+    req.on("close", () => { controller.abort(); nodeStream.destroy(); });
+    nodeStream.on("error", () => { if (!res.headersSent) res.status(502).end(); });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     req.log.error({ err }, "stream/audio failed");
-    for (const ext of [".m4a", ".mp4", ".aac", ".mp3"]) fs.unlink(`${tmp}${ext}`, () => {});
     if (!res.headersSent) res.status(500).json({ error: msg.slice(0, 300) });
   }
 });
