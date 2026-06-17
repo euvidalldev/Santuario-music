@@ -43,7 +43,54 @@ const DOWNLOADS_FOLDER = "Sanctuary/Downloads";
 const LIBRARY_FILE     = "Sanctuary/library.json";
 const WEB_STORAGE_KEY  = "sanctuary_library_v2";
 
-// ─── In-memory blob URLs for web ─────────────────────────────────────────────
+// ─── IndexedDB for web audio persistence ────────────────────────────────────
+
+const DB_NAME = "SanctuaryAudio";
+const DB_VERSION = 1;
+const STORE_NAME = "audio";
+
+function openDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = () => {
+      req.result.createObjectStore(STORE_NAME, { keyPath: "id" });
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function saveToIndexedDB(trackId: string, blob: Blob): Promise<void> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    tx.objectStore(STORE_NAME).put({ id: trackId, blob });
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+  });
+}
+
+async function loadFromIndexedDB(trackId: string): Promise<Blob | null> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readonly");
+    const req = tx.objectStore(STORE_NAME).get(trackId);
+    req.onsuccess = () => { db.close(); resolve(req.result?.blob ?? null); };
+    req.onerror = () => { db.close(); reject(req.error); };
+  });
+}
+
+async function removeFromIndexedDB(trackId: string): Promise<void> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    tx.objectStore(STORE_NAME).delete(trackId);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+  });
+}
+
+// ─── Blob URL cache for active session ──────────────────────────────────────
 
 const blobUrls = new Map<string, string>();
 
@@ -134,6 +181,7 @@ export async function removeTrack(id: string): Promise<void> {
     } else {
       const url = blobUrls.get(id);
       if (url) { URL.revokeObjectURL(url); blobUrls.delete(id); }
+      await removeFromIndexedDB(id);
     }
   }
   lib.tracks = lib.tracks.filter(t => t.id !== id);
@@ -191,7 +239,8 @@ export async function saveAudioFile(trackId: string, blob: Blob, filename: strin
     const audioSrc = Capacitor.convertFileSrc(uri);
     return { localPath, audioSrc };
   }
-  // Web: blob URL
+  // Web: IndexedDB + blob URL
+  await saveToIndexedDB(trackId, blob);
   const audioSrc = URL.createObjectURL(blob);
   blobUrls.set(trackId, audioSrc);
   return { localPath: filename, audioSrc };
@@ -206,7 +255,16 @@ export async function getAudioSrc(track: LocalTrack): Promise<string> {
       return Capacitor.convertFileSrc(uri);
     } catch { return ""; }
   }
-  return blobUrls.get(track.id) ?? "";
+  const cached = blobUrls.get(track.id);
+  if (cached) return cached;
+  // Try loading from IndexedDB on page refresh
+  const blob = await loadFromIndexedDB(track.id);
+  if (blob) {
+    const url = URL.createObjectURL(blob);
+    blobUrls.set(track.id, url);
+    return url;
+  }
+  return "";
 }
 
 export { newId };
