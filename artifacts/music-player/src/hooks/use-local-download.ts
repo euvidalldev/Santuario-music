@@ -38,7 +38,12 @@ function cookiesHeader(): Record<string, string> {
   try {
     const cookies = loadSettings().youtubeCookies;
     if (!cookies) return {};
-    const encoded = btoa(cookies);
+    // Only send cookies that match YouTube domains
+    const lines = cookies.split("\n").filter(l =>
+      l.includes("youtube.com") || l.includes("ytimg.com") || l.includes("googlevideo.com")
+    );
+    if (lines.length === 0) return {};
+    const encoded = btoa(lines.join("\n"));
     return { "x-youtube-cookies": encoded };
   } catch { return {}; }
 }
