@@ -1,0 +1,11 @@
+{
+  "name": "@sanctuary/native-http",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@capacitor/core": "^8.0.0"
+  }
+}

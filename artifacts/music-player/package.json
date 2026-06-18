@@ -86,6 +86,7 @@
     "@capacitor/filesystem": "^8.1.2",
     "@capacitor/ios": "^8.4.0",
     "@capacitor/splash-screen": "^8.0.1",
-    "@capacitor/status-bar": "^8.0.2"
+    "@capacitor/status-bar": "^8.0.2",
+    "@sanctuary/native-http": "workspace:*"
   }
 }
