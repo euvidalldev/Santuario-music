@@ -40,8 +40,17 @@ if ($content -match "NativeHttpPlugin") {
     $content = $newContent
   }
 
-  # Add registration in onCreate
-  $newContent = $content -replace "(super\.onCreate\(savedInstanceState\);)", "    registerPlugin(NativeHttpPlugin.class);`n    `$1"
+  # Add registration in onCreate (handles both existing and missing super.onCreate)
+  if ($content -match "super\.onCreate\(savedInstanceState\)") {
+    $newContent = $content -replace "(super\.onCreate\(savedInstanceState\);)", "    registerPlugin(NativeHttpPlugin.class);`n    `$1"
+  } else {
+    # No onCreate at all — insert one before the closing brace of the class
+    $newContent = $content -replace "(?<= extends BridgeActivity \{)\s*`n?\s*(`)", "`n    @Override`n    public void onCreate(Bundle savedInstanceState) {`n        registerPlugin(NativeHttpPlugin.class);`n        super.onCreate(savedInstanceState);`n    }`n`$1"
+    # Also ensure the Bundle import exists
+    if ($newContent -notmatch "import android\.os\.Bundle") {
+      $newContent = $newContent -replace "(import com\.getcapacitor\.BridgeActivity;)", "`$1`nimport android.os.Bundle;"
+    }
+  }
   $content = $newContent
 
   Set-Content -Path $mainActivity.FullName -Value $content -NoNewline
