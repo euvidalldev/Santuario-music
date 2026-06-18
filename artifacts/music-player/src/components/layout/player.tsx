@@ -3,6 +3,7 @@ import { usePlayer, togglePlayPause, prevTrack, nextTrack, setVolume, updateProg
 import { Slider } from "@/components/ui/slider";
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX } from "lucide-react";
 import { formatDuration } from "@/lib/format";
+import { t } from "@/lib/pt-br";
 
 export function AudioPlayer() {
   const playerState = usePlayer();
@@ -15,7 +16,6 @@ export function AudioPlayer() {
 
   useEffect(() => {
     if (!audioRef.current || !currentTrack) return;
-    // Only update src when track changes
     if (audioRef.current.src !== currentTrack.audioSrc) {
       audioRef.current.src = currentTrack.audioSrc;
       audioRef.current.load();
@@ -43,7 +43,6 @@ export function AudioPlayer() {
     <>
       <audio ref={audioRef} onTimeUpdate={handleTimeUpdate} onEnded={handleTrackEnd} />
 
-      {/* ── Mobile player ── */}
       <div className="md:hidden fixed bottom-[56px] left-0 right-0 bg-card border-t border-border z-40 animate-in slide-in-from-bottom-full duration-300 shadow-[0_-6px_20px_rgba(0,0,0,0.3)]">
         <div className="px-3 pt-2">
           <Slider value={[currentTime]} max={currentTrack.duration || 100} step={1} onValueChange={handleSeek} className="w-full" />
@@ -74,13 +73,12 @@ export function AudioPlayer() {
         </div>
       </div>
 
-      {/* ── Desktop player ── */}
       <div className="hidden md:flex fixed bottom-0 left-0 right-0 h-24 bg-card border-t border-border items-center px-6 z-50 animate-in slide-in-from-bottom-full duration-300 shadow-[0_-10px_40px_rgba(0,0,0,0.3)]">
         <div className="flex items-center w-1/3 gap-4">
           <div className="w-14 h-14 bg-muted rounded-md overflow-hidden flex-shrink-0 relative group">
             {currentTrack.thumbnailUrl
               ? <img src={currentTrack.thumbnailUrl} alt={currentTrack.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-              : <div className="w-full h-full flex items-center justify-center bg-secondary"><span className="text-muted-foreground text-xs font-medium">No Art</span></div>}
+              : <div className="w-full h-full flex items-center justify-center bg-secondary"><span className="text-muted-foreground text-xs font-medium">{t.player.noArt}</span></div>}
             <div className="absolute inset-0 border border-white/10 rounded-md pointer-events-none" />
           </div>
           <div className="flex flex-col min-w-0">

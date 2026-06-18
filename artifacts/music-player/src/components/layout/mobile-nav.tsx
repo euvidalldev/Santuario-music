@@ -1,13 +1,14 @@
 import { Link, useLocation } from "wouter";
 import { Home, Download, Settings } from "lucide-react";
+import { t } from "@/lib/pt-br";
 
 export function MobileNav() {
   const [location] = useLocation();
 
   const items = [
-    { href: "/", icon: Home, label: "Library" },
-    { href: "/downloads", icon: Download, label: "Downloads" },
-    { href: "/settings", icon: Settings, label: "Settings" },
+    { href: "/", icon: Home, label: t.mobileNav.library },
+    { href: "/downloads", icon: Download, label: t.mobileNav.downloads },
+    { href: "/settings", icon: Settings, label: t.mobileNav.settings },
   ];
 
   return (

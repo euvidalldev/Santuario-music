@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { t } from "@/lib/pt-br";
 
 const NavItem = ({ href, icon: Icon, label, isActive }: { href: string; icon: React.ElementType; label: string; isActive: boolean }) => (
   <Link href={href}>
@@ -37,9 +38,9 @@ export function Sidebar() {
       await createFolder(newFolderName.trim());
       setIsCreateOpen(false);
       setNewFolderName("");
-      toast({ title: "Folder created", description: `"${newFolderName}" added to your library` });
+      toast({ title: t.sidebar.folderCreated, description: t.sidebar.folderAdded(newFolderName) });
     } catch {
-      toast({ title: "Error", description: "Failed to create folder", variant: "destructive" });
+      toast({ title: t.sidebar.error, description: t.sidebar.failedCreate, variant: "destructive" });
     } finally {
       setIsCreating(false);
     }
@@ -51,17 +52,17 @@ export function Sidebar() {
         <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-[0_0_15px_rgba(200,80,0,0.3)]">
           <Library className="w-4 h-4 text-primary-foreground" />
         </div>
-        <span className="font-bold text-lg tracking-tight text-sidebar-foreground">Sanctuary</span>
+        <span className="font-bold text-lg tracking-tight text-sidebar-foreground">{t.sidebar.sanctuary}</span>
       </div>
 
       <div className="px-3 flex flex-col gap-1">
-        <NavItem href="/"          icon={Home}     label="Library"   isActive={location === "/"} />
-        <NavItem href="/downloads" icon={Download}  label="Downloads" isActive={location === "/downloads"} />
-        <NavItem href="/settings"  icon={Settings}  label="Settings"  isActive={location === "/settings"} />
+        <NavItem href="/"          icon={Home}     label={t.sidebar.library}    isActive={location === "/"} />
+        <NavItem href="/downloads" icon={Download}  label={t.sidebar.downloads}  isActive={location === "/downloads"} />
+        <NavItem href="/settings"  icon={Settings}  label={t.sidebar.settings}   isActive={location === "/settings"} />
       </div>
 
       <div className="mt-8 px-6 flex items-center justify-between group">
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Playlists</span>
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t.sidebar.playlists}</span>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
             <button className="text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover:opacity-100">
@@ -69,12 +70,12 @@ export function Sidebar() {
             </button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
-            <DialogHeader><DialogTitle>New Folder</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t.sidebar.newFolder}</DialogTitle></DialogHeader>
             <form onSubmit={handleCreateFolder} className="space-y-4 pt-4">
-              <Input placeholder="Folder name..." value={newFolderName} onChange={e => setNewFolderName(e.target.value)} autoFocus />
+              <Input placeholder={t.sidebar.folderName} value={newFolderName} onChange={e => setNewFolderName(e.target.value)} autoFocus />
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-                <Button type="submit" disabled={!newFolderName.trim() || isCreating}>Create</Button>
+                <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>{t.sidebar.cancel}</Button>
+                <Button type="submit" disabled={!newFolderName.trim() || isCreating}>{t.sidebar.create}</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -90,7 +91,7 @@ export function Sidebar() {
               </div>
             ))
           ) : folders.length === 0 ? (
-            <div className="px-3 py-4 text-xs text-muted-foreground text-center">No folders yet</div>
+            <div className="px-3 py-4 text-xs text-muted-foreground text-center">{t.sidebar.noFolders}</div>
           ) : (
             folders.map(folder => (
               <NavItem key={folder.id} href={`/folders/${folder.id}`} icon={FolderIcon} label={folder.name} isActive={location === `/folders/${folder.id}`} />

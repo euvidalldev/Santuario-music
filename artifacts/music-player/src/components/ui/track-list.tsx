@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { t } from "@/lib/pt-br";
 
 interface TrackListProps {
   tracks: LocalTrack[];
@@ -70,9 +71,9 @@ export function TrackList({ tracks, isLoading }: TrackListProps) {
         <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4 border border-border">
           <HardDrive className="w-8 h-8 text-muted-foreground" />
         </div>
-        <h3 className="text-xl font-medium text-foreground mb-2">No tracks yet</h3>
+        <h3 className="text-xl font-medium text-foreground mb-2">{t.trackList.noTracks}</h3>
         <p className="text-muted-foreground text-sm max-w-md">
-          Download music from YouTube — it will be saved directly on your device.
+          {t.trackList.noTracksDesc}
         </p>
       </div>
     );
@@ -87,16 +88,16 @@ export function TrackList({ tracks, isLoading }: TrackListProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuItem onClick={() => openEdit(track)}>
-          <Edit2 className="w-4 h-4 mr-2" /> Edit Info
+          <Edit2 className="w-4 h-4 mr-2" /> {t.trackList.editInfo}
         </DropdownMenuItem>
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
-            <FolderIcon className="w-4 h-4 mr-2" /> Move to Folder
+            <FolderIcon className="w-4 h-4 mr-2" /> {t.trackList.moveToFolder}
           </DropdownMenuSubTrigger>
           <DropdownMenuPortal>
             <DropdownMenuSubContent>
               <DropdownMenuItem onClick={() => handleMoveToFolder(track.id, null)} className={!track.folderId ? "bg-secondary" : ""}>
-                No Folder
+                {t.trackList.noFolder}
               </DropdownMenuItem>
               {folders?.length ? <DropdownMenuSeparator /> : null}
               {folders?.map(folder => (
@@ -109,7 +110,7 @@ export function TrackList({ tracks, isLoading }: TrackListProps) {
         </DropdownMenuSub>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => handleDelete(track.id)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-          <Trash2 className="w-4 h-4 mr-2" /> Delete Track
+          <Trash2 className="w-4 h-4 mr-2" /> {t.trackList.deleteTrack}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -117,12 +118,11 @@ export function TrackList({ tracks, isLoading }: TrackListProps) {
 
   return (
     <>
-      {/* ── Desktop ── */}
       <div className="hidden md:block w-full">
         <div className="grid grid-cols-[2rem_1fr_minmax(120px,2fr)_minmax(100px,1fr)_minmax(80px,1fr)_2.5rem] gap-4 px-8 py-3 border-b border-border/50 text-xs font-medium text-muted-foreground uppercase tracking-wider sticky top-0 bg-background/95 backdrop-blur z-20">
-          <div>#</div><div>Title</div><div>Artist</div>
-          <div className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Added</div>
-          <div className="flex items-center gap-1.5"><HardDrive className="w-3.5 h-3.5" /> Size</div>
+          <div>{t.trackList.colNum}</div><div>{t.trackList.colTitle}</div><div>{t.trackList.colArtist}</div>
+          <div className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {t.trackList.colAdded}</div>
+          <div className="flex items-center gap-1.5"><HardDrive className="w-3.5 h-3.5" /> {t.trackList.colSize}</div>
           <div />
         </div>
         <div className="flex flex-col pt-2 pb-6 px-4">
@@ -163,7 +163,6 @@ export function TrackList({ tracks, isLoading }: TrackListProps) {
         </div>
       </div>
 
-      {/* ── Mobile ── */}
       <div className="md:hidden flex flex-col pb-4">
         {tracks.map(track => {
           const active = currentTrack?.id === track.id;
@@ -188,19 +187,19 @@ export function TrackList({ tracks, isLoading }: TrackListProps) {
 
       <Dialog open={!!editingTrack} onOpenChange={(open) => !open && setEditingTrack(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Edit Track Info</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t.trackList.editTitle}</DialogTitle></DialogHeader>
           <form onSubmit={handleSaveEdit} className="space-y-4 pt-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
+              <Label htmlFor="title">{t.trackList.title}</Label>
               <Input id="title" value={editTitle} onChange={e => setEditTitle(e.target.value)} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="artist">Artist</Label>
+              <Label htmlFor="artist">{t.trackList.artist}</Label>
               <Input id="artist" value={editArtist} onChange={e => setEditArtist(e.target.value)} required />
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditingTrack(null)}>Cancel</Button>
-              <Button type="submit">Save Changes</Button>
+              <Button type="button" variant="outline" onClick={() => setEditingTrack(null)}>{t.trackList.cancel}</Button>
+              <Button type="submit">{t.trackList.saveChanges}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

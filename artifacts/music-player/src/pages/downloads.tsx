@@ -10,6 +10,7 @@ import { useLocalDownload } from "@/hooks/use-local-download";
 import { saveAudioFile, addTrack, newId, LocalTrack } from "@/lib/local-db";
 import { Link } from "wouter";
 import { getApiBaseUrl } from "@/lib/api-url";
+import { t } from "@/lib/pt-br";
 
 interface UploadItem { name: string; status: "pending" | "done" | "error"; error?: string; }
 
@@ -41,7 +42,7 @@ export default function Downloads() {
       [".mp3", ".m4a", ".flac", ".wav", ".ogg"].some(ext => f.name.toLowerCase().endsWith(ext))
     );
     if (!audioFiles.length) {
-      toast({ title: "No audio files", description: "MP3, M4A, FLAC, WAV, OGG supported.", variant: "destructive" });
+      toast({ title: t.downloads.noAudioFiles, description: t.downloads.supportedFormats, variant: "destructive" });
       return;
     }
     setUploading(true);
@@ -57,7 +58,7 @@ export default function Downloads() {
         const track: LocalTrack = {
           id: trackId,
           title: file.name.replace(/\.[^.]+$/, ""),
-          artist: "Unknown Artist",
+          artist: "Artista Desconhecido",
           duration: 0,
           fileSize: file.size,
           localPath,
@@ -67,7 +68,6 @@ export default function Downloads() {
           downloadedAt: new Date().toISOString(),
         };
 
-        // Try to get metadata from backend
         try {
           const formData = new FormData();
           formData.append("files", file);
@@ -86,7 +86,7 @@ export default function Downloads() {
         await addTrack(track);
         results.push({ name: track.title, status: "done" });
       } catch (err) {
-        results.push({ name: file.name, status: "error", error: err instanceof Error ? err.message : "Failed" });
+        results.push({ name: file.name, status: "error", error: err instanceof Error ? err.message : "Falhou" });
       }
       setUploadItems([...results, ...audioFiles.slice(results.length).map(f => ({ name: f.name, status: "pending" as const }))]);
     }
@@ -94,7 +94,7 @@ export default function Downloads() {
     refreshLibrary();
     setUploading(false);
     const succeeded = results.filter(r => r.status === "done").length;
-    toast({ title: `${succeeded} track${succeeded !== 1 ? "s" : ""} imported` });
+    toast({ title: t.downloads.imported(succeeded) });
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -112,44 +112,42 @@ export default function Downloads() {
     <div className="flex flex-col min-h-full max-w-5xl mx-auto w-full">
       <div className="px-4 md:px-8 pt-8 pb-4 md:pt-14 md:pb-6 flex flex-col gap-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-foreground">Downloads</h1>
+          <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-foreground">{t.downloads.title}</h1>
           <Link href="/settings">
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card border border-border text-xs text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors cursor-pointer">
               <Settings className="w-3.5 h-3.5" />
-              <span className="font-mono">{settings.downloadQuality} AAC</span>
+              <span className="font-mono">{t.downloads.quality(settings.downloadQuality)}</span>
             </div>
           </Link>
         </div>
 
-        {/* YouTube download */}
         <div className="bg-card border border-border p-5 rounded-xl shadow-lg relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[50px] pointer-events-none -translate-y-1/2 translate-x-1/2" />
-          <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-4">From YouTube → saves to device</p>
+          <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-4">{t.downloads.fromYoutube}</p>
           <form onSubmit={handleStart} className="flex flex-col md:flex-row gap-3 relative z-10">
             <div className="flex-1">
-              <Input placeholder="Paste YouTube URL..." value={url} onChange={e => setUrl(e.target.value)} className="h-12 text-base bg-background/50" />
+              <Input placeholder={t.downloads.pasteUrl} value={url} onChange={e => setUrl(e.target.value)} className="h-12 text-base bg-background/50" />
             </div>
             <div className="w-full md:w-44">
               <Select value={selectedFolder} onValueChange={setSelectedFolder}>
                 <SelectTrigger className="h-12 bg-background/50">
-                  <div className="flex items-center gap-2"><FolderIcon className="w-4 h-4 text-muted-foreground" /><SelectValue placeholder="Folder" /></div>
+                  <div className="flex items-center gap-2"><FolderIcon className="w-4 h-4 text-muted-foreground" /><SelectValue placeholder={t.downloads.folder} /></div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No folder</SelectItem>
+                  <SelectItem value="none">{t.downloads.noFolder}</SelectItem>
                   {folders.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <Button type="submit" size="lg" className="h-12 px-8 font-semibold shadow-md" disabled={!url.trim()}>
-              <Download className="w-5 h-5 mr-2" /> Download
+              <Download className="w-5 h-5 mr-2" /> {t.downloads.download}
             </Button>
           </form>
         </div>
 
-        {/* Download queue */}
         {activeQueue.length > 0 && (
           <div className="flex flex-col gap-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Queue</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t.downloads.queue}</h2>
             {activeQueue.map(item => (
               <div key={item.id} className="bg-card border border-border rounded-lg p-4 flex items-center gap-4 relative overflow-hidden">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-secondary border border-border/50">
@@ -163,10 +161,10 @@ export default function Downloads() {
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-medium truncate pr-4">{item.title}</span>
                     <span className="text-xs font-mono text-muted-foreground whitespace-nowrap">
-                      {item.status === "done" ? "saved" :
-                       item.status === "error" ? "failed" :
-                       item.status === "fetching_info" ? "getting info…" :
-                       item.status === "saving" ? "saving…" :
+                      {item.status === "done" ? t.downloads.saved :
+                       item.status === "error" ? t.downloads.failed :
+                       item.status === "fetching_info" ? t.downloads.gettingInfo :
+                       item.status === "saving" ? t.downloads.saving :
                        `${Math.round(item.progress)}%`}
                     </span>
                   </div>
@@ -190,10 +188,9 @@ export default function Downloads() {
           </div>
         )}
 
-        {/* Import from device */}
         <div className="bg-card border border-border p-5 rounded-xl shadow-lg relative overflow-hidden">
           <div className="absolute bottom-0 left-0 w-32 h-32 bg-primary/5 rounded-full blur-[50px] pointer-events-none translate-y-1/2 -translate-x-1/2" />
-          <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-4">Import from Device</p>
+          <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-4">{t.downloads.importFromDevice}</p>
           <div className="flex flex-col md:flex-row gap-3 mb-4 relative z-10">
             <div className="w-full md:w-44">
               <Select value={uploadFolder} onValueChange={setUploadFolder}>
@@ -201,13 +198,13 @@ export default function Downloads() {
                   <div className="flex items-center gap-2"><FolderIcon className="w-4 h-4 text-muted-foreground" /><SelectValue /></div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No folder</SelectItem>
+                  <SelectItem value="none">{t.downloads.noFolder}</SelectItem>
                   {folders.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <Button type="button" variant="outline" className="h-10" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-              <FileAudio className="w-4 h-4 mr-2" /> Choose Files
+              <FileAudio className="w-4 h-4 mr-2" /> {t.downloads.chooseFiles}
             </Button>
             <input ref={fileInputRef} type="file" accept="audio/*,.mp3,.m4a,.flac,.wav,.ogg" multiple className="hidden" onChange={handleFileChange} />
           </div>
@@ -222,8 +219,8 @@ export default function Downloads() {
                 {uploading ? <RefreshCw className="w-5 h-5 text-primary animate-spin" /> : <Upload className={`w-5 h-5 ${isDragOver ? "text-primary" : "text-muted-foreground"}`} />}
               </div>
               <div>
-                <p className="text-sm font-medium text-foreground">{uploading ? "Importing…" : isDragOver ? "Drop to import" : "Drag & drop audio files here"}</p>
-                <p className="text-xs text-muted-foreground mt-1">MP3, M4A, FLAC, WAV, OGG — saved to device</p>
+                <p className="text-sm font-medium text-foreground">{uploading ? t.downloads.importing : isDragOver ? t.downloads.dropToImport : t.downloads.dragAndDrop}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t.downloads.savedToDevice}</p>
               </div>
             </div>
           </div>

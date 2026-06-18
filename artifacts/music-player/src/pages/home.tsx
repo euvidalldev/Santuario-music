@@ -5,6 +5,7 @@ import { playTrack } from "@/hooks/use-player";
 import { Button } from "@/components/ui/button";
 import { formatFileSize } from "@/lib/format";
 import { useLocalTracks, useLocalStats } from "@/hooks/use-local-library";
+import { t } from "@/lib/pt-br";
 
 export default function Home() {
   const { tracks, isLoading } = useLocalTracks(null);
@@ -20,13 +21,13 @@ export default function Home() {
         <div className="absolute top-0 right-0 opacity-5 pointer-events-none">
           <div className="w-48 h-48 rounded-full bg-primary blur-[80px]" />
         </div>
-        <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-foreground relative z-10">All Tracks</h1>
+        <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-foreground relative z-10">{t.home.allTracks}</h1>
         <div className="flex flex-wrap items-center gap-3 relative z-10">
           <Button size="default" className="rounded-full px-6 shadow-[0_0_20px_rgba(200,80,0,0.3)] font-semibold" onClick={handlePlayAll} disabled={tracks.length === 0}>
-            <Play className="w-4 h-4 mr-2 fill-current" /> Play All
+            <Play className="w-4 h-4 mr-2 fill-current" /> {t.home.playAll}
           </Button>
           <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
-            <span>{tracks.length} tracks</span>
+            <span>{t.home.tracks(tracks.length)}</span>
             {stats.totalSize > 0 && (
               <><span className="w-1 h-1 rounded-full bg-border inline-block" /><span>{formatFileSize(stats.totalSize)}</span></>
             )}

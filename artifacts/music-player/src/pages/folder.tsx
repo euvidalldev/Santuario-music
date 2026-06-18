@@ -8,6 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useLocalTracks, useLocalFolders, useDeleteFolder, useRenameFolder } from "@/hooks/use-local-library";
+import { t } from "@/lib/pt-br";
 
 export default function Folder() {
   const params = useParams();
@@ -41,7 +42,7 @@ export default function Folder() {
   };
 
   if (!folder && folders.length > 0) {
-    return <div className="p-8 text-center text-muted-foreground mt-20">Folder not found</div>;
+    return <div className="p-8 text-center text-muted-foreground mt-20">{t.folder.notFound}</div>;
   }
 
   return (
@@ -53,7 +54,7 @@ export default function Folder() {
         <div className="flex items-start justify-between relative z-10">
           <div className="flex flex-col gap-1 min-w-0 pr-3">
             <div className="flex items-center gap-2 text-primary font-medium text-xs mb-1">
-              <FolderIcon className="w-3 h-3" /><span>Playlist</span>
+              <FolderIcon className="w-3 h-3" /><span>{t.folder.playlist}</span>
             </div>
             <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-foreground truncate">{folder?.name}</h1>
           </div>
@@ -65,31 +66,31 @@ export default function Folder() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem onClick={() => { setRenameValue(folder?.name || ""); setIsRenameOpen(true); }}>
-                <Edit2 className="w-4 h-4 mr-2" /> Rename Folder
+                <Edit2 className="w-4 h-4 mr-2" /> {t.folder.rename}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setIsDeleteOpen(true)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                <Trash2 className="w-4 h-4 mr-2" /> Delete Folder
+                <Trash2 className="w-4 h-4 mr-2" /> {t.folder.delete}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
         <div className="flex flex-wrap items-center gap-3 relative z-10">
           <Button size="default" className="rounded-full px-6 shadow-[0_0_20px_rgba(200,80,0,0.3)] font-semibold" onClick={handlePlayAll} disabled={tracks.length === 0}>
-            <Play className="w-4 h-4 mr-2 fill-current" /> Play Folder
+            <Play className="w-4 h-4 mr-2 fill-current" /> {t.folder.playFolder}
           </Button>
-          <span className="text-xs text-muted-foreground font-mono">{tracks.length} tracks</span>
+          <span className="text-xs text-muted-foreground font-mono">{t.folder.tracks(tracks.length)}</span>
         </div>
       </div>
       <div className="flex-1"><TrackList tracks={tracks} isLoading={isLoading} /></div>
 
       <Dialog open={isRenameOpen} onOpenChange={setIsRenameOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Rename Folder</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t.folder.renameTitle}</DialogTitle></DialogHeader>
           <form onSubmit={handleRename} className="space-y-4 pt-4">
             <Input value={renameValue} onChange={e => setRenameValue(e.target.value)} autoFocus />
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsRenameOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={!renameValue.trim()}>Save</Button>
+              <Button type="button" variant="outline" onClick={() => setIsRenameOpen(false)}>{t.folder.cancel}</Button>
+              <Button type="submit" disabled={!renameValue.trim()}>{t.folder.save}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -97,13 +98,11 @@ export default function Folder() {
 
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Delete Folder</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground pt-2">
-            Delete folder <strong>"{folder?.name}"</strong>? Tracks will be moved to Library.
-          </p>
+          <DialogHeader><DialogTitle>{t.folder.deleteTitle}</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground pt-2" dangerouslySetInnerHTML={{ __html: t.folder.deleteConfirm(folder?.name || "") }} />
           <DialogFooter className="pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
-            <Button type="button" variant="destructive" onClick={handleDelete}>Delete</Button>
+            <Button type="button" variant="outline" onClick={() => setIsDeleteOpen(false)}>{t.folder.cancel}</Button>
+            <Button type="button" variant="destructive" onClick={handleDelete}>{t.folder.deleteBtn}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
