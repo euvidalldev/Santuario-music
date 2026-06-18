@@ -1,18 +1,7 @@
-/**
- * Minimal YouTube InnerTube API client.
- * Runs on-device (uses the phone's IP), so YouTube won't block it.
- *
- * On native (Capacitor): uses NativeHttp plugin (bypasses CORS)
- * On web fallback:      uses fetch() – may hit CORS
- */
-
-import { Capacitor } from "@capacitor/core";
-import type { HttpRequestOptions, HttpResponse } from "@sanctuary/native-http";
+import { Capacitor, CapacitorHttp } from "@capacitor/core";
 
 const INNERTUBE_API = "https://www.youtube.com/youtubei/v1/player?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
-const API_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
 
-// Client contexts that don't require PO tokens
 const CLIENTS = {
   android_vr: {
     clientName: "ANDROID_VR",
@@ -57,31 +46,23 @@ export interface AudioFormat {
 const UA_IOS = "com.google.ios.youtube/19.45.36 (iPhone16,2; U; CPU iOS 18_4_0 like Mac OS X)";
 const UA_ANDROID = "com.google.android.youtube/19.45.36 (Linux; U; Android 14) gzip";
 
-/**
- * Make an HTTP request from the native layer (bypasses CORS).
- * Falls back to fetch() for web testing.
- */
 async function nativeFetch(url: string, options: RequestInit): Promise<Response> {
   if (Capacitor.isNativePlatform()) {
-    const { NativeHttp } = await import("@sanctuary/native-http");
-    const res = await NativeHttp.request({
+    const res = await CapacitorHttp.request({
       url,
       method: (options.method as any) || "GET",
       headers: (options.headers as Record<string, string>) || {},
-      body: typeof options.body === "string" ? options.body : undefined,
+      data: typeof options.body === "string" ? options.body : undefined,
+      responseType: "text",
     });
-    return new Response(res.body, {
+    return new Response(res.data, {
       status: res.status,
-      statusText: res.statusText,
-      headers: new Headers(res.headers),
+      headers: new Headers(res.headers || {}),
     });
   }
   return fetch(url, options);
 }
 
-/**
- * Get video info + stream URLs from YouTube using the InnerTube API.
- */
 export async function getTrackInfo(
   videoId: string,
   client: ClientName = "ios",
@@ -132,7 +113,6 @@ export async function getTrackInfo(
     videoId,
   };
 
-  // Extract audio-only formats from streamingData
   const formats: AudioFormat[] = [];
   const streamingData = data.streamingData;
   if (streamingData) {
@@ -145,7 +125,6 @@ export async function getTrackInfo(
       const mime = f.mimeType || "";
       if (mime.startsWith("audio/")) {
         const url = f.url || f.signatureCipher || "";
-        // Skip formats without a direct URL
         if (!url || url.startsWith("http")) {
           formats.push({
             url: url || "",
@@ -163,19 +142,14 @@ export async function getTrackInfo(
     throw new Error("No audio formats found. The video might be restricted.");
   }
 
-  // Sort by bitrate descending (best first)
   formats.sort((a, b) => b.bitrate - a.bitrate);
 
   return { info, formats };
 }
 
-/**
- * Download audio bytes from a CDN URL and return them as an ArrayBuffer.
- */
 export async function downloadAudio(url: string): Promise<ArrayBuffer> {
   if (Capacitor.isNativePlatform()) {
-    const { NativeHttp } = await import("@sanctuary/native-http");
-    const res = await NativeHttp.request({
+    const res = await CapacitorHttp.request({
       url,
       method: "GET",
       headers: {
@@ -184,8 +158,7 @@ export async function downloadAudio(url: string): Promise<ArrayBuffer> {
       },
       responseType: "blob",
     });
-    // Decode base64 to ArrayBuffer
-    const binary = atob(res.body);
+    const binary = atob(res.data);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) {
       bytes[i] = binary.charCodeAt(i);
