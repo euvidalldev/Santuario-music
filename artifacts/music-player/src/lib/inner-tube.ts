@@ -7,7 +7,7 @@
  */
 
 import { Capacitor } from "@capacitor/core";
-import { NativeHttp } from "@sanctuary/native-http";
+import type { HttpRequestOptions, HttpResponse } from "@sanctuary/native-http";
 
 const INNERTUBE_API = "https://www.youtube.com/youtubei/v1/player?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
 const API_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
@@ -63,6 +63,7 @@ const UA_ANDROID = "com.google.android.youtube/19.45.36 (Linux; U; Android 14) g
  */
 async function nativeFetch(url: string, options: RequestInit): Promise<Response> {
   if (Capacitor.isNativePlatform()) {
+    const { NativeHttp } = await import("@sanctuary/native-http");
     const res = await NativeHttp.request({
       url,
       method: (options.method as any) || "GET",
@@ -173,6 +174,7 @@ export async function getTrackInfo(
  */
 export async function downloadAudio(url: string): Promise<ArrayBuffer> {
   if (Capacitor.isNativePlatform()) {
+    const { NativeHttp } = await import("@sanctuary/native-http");
     const res = await NativeHttp.request({
       url,
       method: "GET",
