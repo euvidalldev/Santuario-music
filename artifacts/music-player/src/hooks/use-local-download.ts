@@ -105,7 +105,11 @@ export function useLocalDownload() {
           source = "device";
         } catch {
           const infoRes = await fetch(`${BASE()}/api/stream/info?url=${encodeURIComponent(youtubeUrl)}`);
-          if (!infoRes.ok) throw new Error(`Falha ao buscar info: ${infoRes.statusText}`);
+          if (!infoRes.ok) throw new Error(`Servidor falhou: ${infoRes.status} ${infoRes.statusText}`);
+          const ct = infoRes.headers.get("content-type") || "";
+          if (!ct.includes("json")) {
+            throw new Error("Servidor retornou HTML (possivelmente dormindo)");
+          }
           const info: { title: string; artist: string; duration: number; thumbnailUrl: string | null } = await infoRes.json();
           title = info.title;
           artist = info.artist;

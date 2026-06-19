@@ -38,7 +38,7 @@ export function extractVideoId(url: string): string | null {
 
 // ─── Innertube request ────────────────────────────────────────────────────────
 
-const INNERTUBE_URL = "https://www.youtube.com/youtubei/v1/player";
+const INNERTUBE_URL = "https://www.youtube.com/youtubei/v1/player?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
 
 const CLIENT_CONTEXT = {
   client: {
@@ -64,24 +64,33 @@ const HEADERS = {
 };
 
 async function callInnertube(videoId: string): Promise<InnertubeResponse> {
-  const payload = { context: CLIENT_CONTEXT, videoId };
+  const body = JSON.stringify({ context: CLIENT_CONTEXT, videoId });
 
   if (Capacitor.isNativePlatform()) {
     const { CapacitorHttp } = await import("@capacitor/core");
-    const res = await CapacitorHttp.post({
+    const res = await CapacitorHttp.request({
       url: INNERTUBE_URL,
+      method: "POST",
       headers: HEADERS,
-      data: payload,
+      data: body,
+      responseType: "json",
     });
+    if (typeof res.data !== "object" || res.data === null) {
+      throw new Error("YouTube retornou HTML em vez de JSON (provável bloqueio)");
+    }
     return res.data as InnertubeResponse;
   }
 
   const res = await fetch(INNERTUBE_URL, {
     method: "POST",
     headers: HEADERS,
-    body: JSON.stringify(payload),
+    body,
   });
   if (!res.ok) throw new Error(`Innertube HTTP ${res.status}`);
+  const ct = res.headers.get("content-type") || "";
+  if (!ct.includes("json")) {
+    throw new Error("YouTube retornou HTML em vez de JSON");
+  }
   return res.json() as Promise<InnertubeResponse>;
 }
 
