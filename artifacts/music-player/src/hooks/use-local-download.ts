@@ -20,6 +20,15 @@ export interface DownloadItem {
 
 const BASE = () => getApiBaseUrl();
 
+async function fetchWithRetry(url: string, retries = 3, delayMs = 3000): Promise<Response> {
+  for (let i = 0; i < retries - 1; i++) {
+    const res = await fetch(url);
+    if (res.ok) return res;
+    await new Promise(r => setTimeout(r, delayMs * (i + 1)));
+  }
+  return fetch(url);
+}
+
 async function fetchWithProgress(
   url: string,
   knownLength: number,
@@ -29,17 +38,25 @@ async function fetchWithProgress(
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
   const contentLength = knownLength || parseInt(res.headers.get("Content-Length") ?? "0", 10);
-  const reader = res.body!.getReader();
   const chunks: Uint8Array[] = [];
-  let received = 0;
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(value);
-    received += value.length;
+  if (res.body && typeof res.body.getReader === "function") {
+    const reader = res.body.getReader();
+    let received = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      received += value.length;
+      if (contentLength > 0) {
+        onProgress(Math.round((received / contentLength) * 100));
+      }
+    }
+  } else {
+    const arrayBuffer = await res.arrayBuffer();
+    chunks.push(new Uint8Array(arrayBuffer));
     if (contentLength > 0) {
-      onProgress(Math.round((received / contentLength) * 100));
+      onProgress(100);
     }
   }
 
@@ -82,8 +99,14 @@ export function useLocalDownload() {
           contentLength = info.contentLength;
           source = "device";
         } catch {
-          const infoRes = await fetch(`${BASE()}/api/stream/info?url=${encodeURIComponent(youtubeUrl)}`);
-          if (!infoRes.ok) throw new Error(`Falha ao buscar info: ${infoRes.statusText}`);
+          let infoRes = await fetchWithRetry(`${BASE()}/api/stream/info?url=${encodeURIComponent(youtubeUrl)}`);
+          if (!infoRes.ok) {
+            if (infoRes.status === 0 || infoRes.status >= 500) {
+              await new Promise(r => setTimeout(r, 5000));
+              infoRes = await fetchWithRetry(`${BASE()}/api/stream/info?url=${encodeURIComponent(youtubeUrl)}`);
+            }
+            if (!infoRes.ok) throw new Error(`Falha ao buscar info: ${infoRes.status} ${infoRes.statusText}`);
+          }
           const info: { title: string; artist: string; duration: number; thumbnailUrl: string | null } = await infoRes.json();
           title = info.title;
           artist = info.artist;
@@ -104,8 +127,14 @@ export function useLocalDownload() {
           contentLength = info.contentLength;
           source = "device";
         } catch {
-          const infoRes = await fetch(`${BASE()}/api/stream/info?url=${encodeURIComponent(youtubeUrl)}`);
-          if (!infoRes.ok) throw new Error(`Servidor falhou: ${infoRes.status} ${infoRes.statusText}`);
+          let infoRes = await fetchWithRetry(`${BASE()}/api/stream/info?url=${encodeURIComponent(youtubeUrl)}`);
+          if (!infoRes.ok) {
+            if (infoRes.status === 0 || infoRes.status >= 500) {
+              await new Promise(r => setTimeout(r, 5000));
+              infoRes = await fetchWithRetry(`${BASE()}/api/stream/info?url=${encodeURIComponent(youtubeUrl)}`);
+            }
+            if (!infoRes.ok) throw new Error(`Servidor falhou: ${infoRes.status} ${infoRes.statusText}`);
+          }
           const ct = infoRes.headers.get("content-type") || "";
           if (!ct.includes("json")) {
             throw new Error("Servidor retornou HTML (possivelmente dormindo)");

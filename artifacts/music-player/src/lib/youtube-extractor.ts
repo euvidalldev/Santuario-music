@@ -40,41 +40,96 @@ export function extractVideoId(url: string): string | null {
 
 const INNERTUBE_URL = "https://www.youtube.com/youtubei/v1/player?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
 
-const CLIENT_CONTEXT = {
-  client: {
-    clientName: "ANDROID",
-    clientVersion: "19.09.37",
-    androidSdkVersion: 30,
-    userAgent:
-      "com.google.android.youtube/19.09.37 (Linux; U; Android 11) gzip",
-    hl: "en",
-    gl: "US",
-    timeZone: "UTC",
-    utcOffsetMinutes: 0,
+const CLIENTS = [
+  {
+    name: "ANDROID",
+    version: "19.09.37",
+    clientName: "3",
+    sdk: 30,
+    ua: "com.google.android.youtube/19.09.37 (Linux; U; Android 11) gzip",
   },
-};
+  {
+    name: "ANDROID_VR",
+    version: "19.09.37",
+    clientName: "38",
+    sdk: 30,
+    ua: "com.google.android.apps.youtube.vr/19.09.37 (Linux; U; Android 11) gzip",
+  },
+  {
+    name: "ANDROID_EMBEDDED",
+    version: "19.09.37",
+    clientName: "42",
+    sdk: 30,
+    ua: "com.google.android.youtube/19.09.37 (Linux; U; Android 11) gzip",
+  },
+  {
+    name: "TV",
+    version: "2.0",
+    clientName: "7",
+    ua: "Mozilla/5.0 (ChromiumStylePlatform; Linux; Android 11) AppleWebKit/537.36",
+  },
+];
 
-const HEADERS = {
-  "Content-Type": "application/json",
-  "User-Agent":
-    "com.google.android.youtube/19.09.37 (Linux; U; Android 11) gzip",
-  "X-YouTube-Client-Name": "3",
-  "X-YouTube-Client-Version": "19.09.37",
-  "Accept-Language": "en-US,en;q=0.9",
-};
+function makeContext(client: typeof CLIENTS[number]) {
+  const ctx: any = {
+    client: {
+      clientName: client.name,
+      clientVersion: client.version,
+      hl: "en",
+      gl: "US",
+      timeZone: "UTC",
+      utcOffsetMinutes: 0,
+    },
+  };
+  if (client.sdk) ctx.client.androidSdkVersion = client.sdk;
+  if (client.ua) ctx.client.userAgent = client.ua;
+  return ctx;
+}
+
+function makeHeaders(client: typeof CLIENTS[number]) {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "X-YouTube-Client-Name": client.clientName,
+    "X-YouTube-Client-Version": client.version,
+    "Accept-Language": "en-US,en;q=0.9",
+  };
+  if (client.ua) headers["User-Agent"] = client.ua;
+  return headers;
+}
 
 async function callInnertube(videoId: string): Promise<InnertubeResponse> {
-  const body = JSON.stringify({ context: CLIENT_CONTEXT, videoId });
+  let lastErr: Error | null = null;
+
+  for (const client of CLIENTS) {
+    try {
+      return await tryClient(videoId, client);
+    } catch (e) {
+      lastErr = e instanceof Error ? e : new Error(String(e));
+    }
+  }
+
+  throw lastErr ?? new Error("Todos os clients Innertube falharam");
+}
+
+async function tryClient(
+  videoId: string,
+  client: typeof CLIENTS[number]
+): Promise<InnertubeResponse> {
+  const body = JSON.stringify({ context: makeContext(client), videoId });
+  const headers = makeHeaders(client);
 
   if (Capacitor.isNativePlatform()) {
     const { CapacitorHttp } = await import("@capacitor/core");
     const res = await CapacitorHttp.request({
       url: INNERTUBE_URL,
       method: "POST",
-      headers: HEADERS,
+      headers,
       data: body,
       responseType: "json",
     });
+    if (res.status && res.status >= 400) {
+      throw new Error(`Innertube HTTP ${res.status}`);
+    }
     if (typeof res.data !== "object" || res.data === null) {
       throw new Error("YouTube retornou HTML em vez de JSON (provável bloqueio)");
     }
@@ -83,7 +138,7 @@ async function callInnertube(videoId: string): Promise<InnertubeResponse> {
 
   const res = await fetch(INNERTUBE_URL, {
     method: "POST",
-    headers: HEADERS,
+    headers,
     body,
   });
   if (!res.ok) throw new Error(`Innertube HTTP ${res.status}`);
