@@ -154,7 +154,7 @@ export default function Downloads() {
                   {item.status === "done"            && <CheckCircle2 className="w-5 h-5 text-green-500" />}
                   {item.status === "error"           && <XCircle      className="w-5 h-5 text-destructive" />}
                   {item.status === "idle"            && <Clock        className="w-5 h-5 text-muted-foreground" />}
-                  {(item.status === "fetching_info" || item.status === "downloading" || item.status === "saving") &&
+                  {(item.status === "extracting" || item.status === "downloading" || item.status === "saving") &&
                     <RefreshCw className="w-5 h-5 text-primary animate-spin" />}
                 </div>
                 <div className="flex-1 min-w-0 z-10">
@@ -163,7 +163,7 @@ export default function Downloads() {
                     <span className="text-xs font-mono text-muted-foreground whitespace-nowrap">
                       {item.status === "done" ? t.downloads.saved :
                        item.status === "error" ? t.downloads.failed :
-                       item.status === "fetching_info" ? t.downloads.gettingInfo :
+                        item.status === "extracting" ? t.downloads.extracting :
                        item.status === "saving" ? t.downloads.saving :
                        `${Math.round(item.progress)}%`}
                     </span>

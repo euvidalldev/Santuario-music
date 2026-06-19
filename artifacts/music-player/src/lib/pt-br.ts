@@ -15,7 +15,7 @@ export const t = {
     queue: "Fila",
     saved: "salvo",
     failed: "falhou",
-    gettingInfo: "obtendo info…",
+    extracting: "extraindo…",
     saving: "salvando…",
     noAudioFiles: "Nenhum arquivo de áudio",
     supportedFormats: "MP3, M4A, FLAC, WAV, OGG suportados.",
